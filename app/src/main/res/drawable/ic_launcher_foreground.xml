@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stylized Zenith Hourglass / Focus Bell in Neon Lime -->
+    <path
+        android:fillColor="#D4FF00"
+        android:pathData="M38,34 L70,34 L54,52 L70,74 L38,74 L54,56 Z M54,26 C38.54,26 26,38.54 26,54 C26,69.46 38.54,82 54,82 C69.46,82 82,69.46 82,54 C82,38.54 69.46,26 54,26 Z M54,76 C41.85,76 32,66.15 32,54 C32,41.85 41.85,32 54,32 C66.15,32 76,41.85 76,54 C76,66.15 66.15,76 54,76 Z"/>
+</vector>
+

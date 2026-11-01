@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Zenith</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_timer">Timer</string>
+    <string name="nav_alarms">Alarms</string>
+    <string name="nav_progress">Progress</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Notification Channels -->
+    <string name="channel_alarm_name">Zenith Alarms</string>
+    <string name="channel_alarm_desc">Full screen and audible alerts for scheduled study alarms</string>
+    <string name="channel_timer_name">Study Focus Timer</string>
+    <string name="channel_timer_desc">Active focus session countdown and status</string>
+
+    <!-- Actions & States -->
+    <string name="start_session">Start Session</string>
+    <string name="deep_work_sprint">DEEP WORK SPRINT</string>
+    <string name="flip_to_start_desc">Place phone face down to start</string>
+    <string name="dismiss_alarm">Dismiss Alarm</string>
+    <string name="walk_to_dismiss">Walk to Dismiss</string>
+    <string name="emergency_dismiss">Emergency Dismiss</string>
+    <string name="test_ring">Test Ring</string>
+</resources>
+

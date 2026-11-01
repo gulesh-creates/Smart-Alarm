@@ -1,0 +1,11 @@
+<resources>
+    <color name="bg_canvas">#060607</color>
+    <color name="bg_card">#151518</color>
+    <color name="bg_card_elevated">#1E1E23</color>
+    <color name="accent_lime">#D4FF00</color>
+    <color name="accent_lime_dim">#B5DC00</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9A9AA2</color>
+    <color name="danger">#FF453A</color>
+</resources>
+

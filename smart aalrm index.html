@@ -1,0 +1,3652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Zenith — Study Timer & Smart Alarm</title>
+  <style>
+    /* ==========================================================================
+       ZENITH STUDY TIMER + ALARM PROTOTYPE
+       Visual Design System: Deep Obsidian, Charcoal Surfaces, Neon-Lime Accents
+       Inspired by high-performance mobile UI reference
+       ========================================================================== */
+
+    :root {
+      --bg-canvas: #060607;
+      --bg-phone: #0c0c0e;
+      --bg-card: #151518;
+      --bg-card-elevated: #1e1e23;
+      --bg-card-subtle: #24242b;
+      --bg-nav: #141417;
+
+      --accent-lime: #D4FF00;
+      --accent-lime-dim: #b5dc00;
+      --accent-lime-glow: rgba(212, 255, 0, 0.22);
+      --accent-lime-subtle: rgba(212, 255, 0, 0.09);
+      --accent-lime-border: rgba(212, 255, 0, 0.35);
+
+      --danger: #FF453A;
+      --danger-glow: rgba(255, 69, 58, 0.25);
+      --warning: #FF9F0A;
+      --info: #0A84FF;
+
+      --text-primary: #FFFFFF;
+      --text-secondary: #9A9AA2;
+      --text-muted: #5E5E68;
+      --text-inverse: #0A0A0C;
+
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-medium: rgba(255, 255, 255, 0.12);
+
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --radius-xl: 28px;
+      --radius-pill: 9999px;
+
+      --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Roboto", "Segoe UI", sans-serif;
+      --transition-smooth: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px 8px;
+      overflow-x: hidden;
+    }
+
+    /* Outer Wrapper & Mobile Bezel */
+    .app-viewport {
+      width: 100%;
+      max-width: 420px;
+      height: 890px;
+      max-height: calc(100vh - 24px);
+      background-color: var(--bg-phone);
+      border-radius: 44px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 
+        0 25px 65px rgba(0, 0, 0, 0.85),
+        0 0 0 8px #18181c,
+        0 0 0 10px #24242a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    @media (max-width: 450px) {
+      body {
+        padding: 0;
+        align-items: stretch;
+      }
+      .app-viewport {
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+      }
+    }
+
+    /* Android Status Bar */
+    .status-bar {
+      height: 44px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      color: var(--text-primary);
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .status-bar-notch {
+      width: 12px;
+      height: 12px;
+      background: #000;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .status-bar-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-bar-icons svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+
+    /* Prototype Floating Test Bar (Desktop/Quick control) */
+    .prototype-bar {
+      background: #17171d;
+      border-bottom: 1px solid var(--border-medium);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      z-index: 45;
+      flex-shrink: 0;
+    }
+
+    .prototype-tag {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .proto-quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .proto-btn {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 4px 9px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: var(--transition-smooth);
+    }
+
+    .proto-btn:hover {
+      background: var(--bg-card-elevated);
+      border-color: var(--accent-lime);
+      color: var(--accent-lime);
+    }
+
+    .proto-btn.active {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      border-color: var(--accent-lime);
+      font-weight: 700;
+    }
+
+    /* Screen Views Container */
+    .screen-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px 20px 100px 20px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px) scale(0.99);
+      transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1), transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+      scrollbar-width: none;
+    }
+
+    .screen::-webkit-scrollbar {
+      display: none;
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Header Common Styles */
+    .screen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .user-greeting {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-greeting h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      color: var(--text-primary);
+    }
+
+    .user-greeting p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition-smooth);
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-card-elevated);
+      border-color: var(--border-medium);
+    }
+
+    .icon-btn.primary {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      border: none;
+      box-shadow: 0 4px 18px var(--accent-lime-glow);
+    }
+
+    .icon-btn.primary:hover {
+      background: var(--accent-lime-dim);
+      transform: scale(1.05);
+    }
+
+    .badge-dot {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 7px;
+      height: 7px;
+      background: var(--accent-lime);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--accent-lime);
+    }
+
+    /* Card System */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 22px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition-smooth);
+    }
+
+    .card:hover {
+      border-color: var(--border-medium);
+    }
+
+    /* Hero Banner Card (Inspired by Center Reference Card) */
+    .hero-lime-card {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-bottom: 16px;
+      position: relative;
+      box-shadow: 0 12px 32px var(--accent-lime-glow);
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+    }
+
+    .hero-lime-card:active {
+      transform: scale(0.985);
+    }
+
+    .hero-lime-card .pill-tag {
+      background: rgba(10, 10, 12, 0.12);
+      color: var(--text-inverse);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .hero-lime-card h2 {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .hero-lime-card p {
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0.82;
+      margin-bottom: 20px;
+    }
+
+    .hero-lime-card .hero-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-dark-pill {
+      background: var(--text-inverse);
+      color: #FFFFFF;
+      border: none;
+      padding: 12px 22px;
+      border-radius: var(--radius-pill);
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      transition: var(--transition-smooth);
+    }
+
+    .btn-dark-pill:hover {
+      background: #1c1c22;
+      transform: translateX(2px);
+    }
+
+    .hero-badge-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(10, 10, 12, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Today's Progress Card (Inspired by Left Reference Card) */
+    .progress-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .gauge-wrapper {
+      position: relative;
+      width: 200px;
+      height: 120px;
+      margin: 0 auto 12px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .gauge-track {
+      fill: none;
+      stroke: #26262d;
+      stroke-width: 14;
+      stroke-linecap: round;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke: var(--accent-lime);
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 90;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      filter: drop-shadow(0 0 10px var(--accent-lime-glow));
+    }
+
+    .gauge-center-text {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    .gauge-percentage {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+      color: var(--text-primary);
+    }
+
+    .gauge-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* Metric Triad Columns */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .metric-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .metric-icon-bubble {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--bg-card-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      color: var(--accent-lime);
+    }
+
+    .metric-value {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+
+    .metric-sub {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Next Alarm Card */
+    .alarm-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .alarm-time-display {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .alarm-ampm {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0;
+    }
+
+    .alarm-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .alarm-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-card-subtle);
+      color: var(--text-secondary);
+    }
+
+    .chip-badge.lime {
+      background: var(--accent-lime-subtle);
+      color: var(--accent-lime);
+      border: 1px solid var(--accent-lime-border);
+    }
+
+    /* iOS/Android Style Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #2c2c34;
+      transition: .24s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #ffffff;
+      transition: .24s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent-lime);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+      background-color: var(--text-inverse);
+    }
+
+    /* Section Subheads */
+    .section-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 22px 0 12px 0;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: var(--text-primary);
+    }
+
+    .section-link {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-lime);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       SCREEN 2: STUDY TIMER (Flip to Start)
+       ========================================================================== */
+
+    .timer-screen-layout {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding-top: 6px;
+    }
+
+    /* Preset selector row */
+    .preset-chips-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 22px;
+      width: 100%;
+      justify-content: center;
+      overflow-x: auto;
+      padding: 4px 0;
+      scrollbar-width: none;
+    }
+
+    .preset-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 9px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      white-space: nowrap;
+    }
+
+    .preset-chip:hover {
+      border-color: var(--border-medium);
+      color: var(--text-primary);
+    }
+
+    .preset-chip.active {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      border-color: var(--accent-lime);
+      box-shadow: 0 4px 14px var(--accent-lime-glow);
+    }
+
+    /* Large Interactive Timer Ring */
+    .timer-ring-container {
+      position: relative;
+      width: 270px;
+      height: 270px;
+      margin: 8px auto 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timer-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+      overflow: visible;
+    }
+
+    .timer-track-circle {
+      fill: none;
+      stroke: #1b1b22;
+      stroke-width: 16;
+    }
+
+    .timer-fill-circle {
+      fill: none;
+      stroke: var(--accent-lime);
+      stroke-width: 16;
+      stroke-linecap: round;
+      stroke-dasharray: 754;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.4s linear;
+      filter: drop-shadow(0 0 16px var(--accent-lime-glow));
+    }
+
+    .timer-inner-content {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .timer-state-pill {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 5px 13px;
+      border-radius: var(--radius-pill);
+      margin-bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition-smooth);
+    }
+
+    .timer-state-pill.ready {
+      background: var(--bg-card-subtle);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-medium);
+    }
+
+    .timer-state-pill.studying {
+      background: var(--accent-lime-subtle);
+      color: var(--accent-lime);
+      border: 1px solid var(--accent-lime-border);
+      box-shadow: 0 0 15px var(--accent-lime-glow);
+    }
+
+    .timer-state-pill.paused {
+      background: rgba(255, 159, 10, 0.12);
+      color: var(--warning);
+      border: 1px solid rgba(255, 159, 10, 0.3);
+    }
+
+    .timer-state-pill.completed {
+      background: rgba(52, 199, 89, 0.15);
+      color: #34C759;
+      border: 1px solid rgba(52, 199, 89, 0.4);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulseAnim 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .timer-time-big {
+      font-size: 58px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-session-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* Flip Instructions Card */
+    .flip-instruction-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      width: 100%;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-align: left;
+    }
+
+    .flip-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--bg-card-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent-lime);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .flip-instruction-text h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .flip-instruction-text p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    /* Timer Controls Button Bar */
+    .timer-actions-row {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 14px;
+      border-radius: var(--radius-pill);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-elevated);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-primary-lime {
+      flex: 2;
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      border: none;
+      padding: 14px;
+      border-radius: var(--radius-pill);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px var(--accent-lime-glow);
+      transition: var(--transition-smooth);
+    }
+
+    .btn-primary-lime:hover {
+      background: var(--accent-lime-dim);
+      transform: scale(1.02);
+    }
+
+    /* Dedicated Prototype Flip Simulation Card */
+    .prototype-interactive-box {
+      background: #121217;
+      border: 1.5px dashed var(--accent-lime-border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      width: 100%;
+      text-align: left;
+      margin-top: 4px;
+    }
+
+    .proto-box-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .proto-box-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      color: var(--accent-lime);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .proto-flip-btn {
+      width: 100%;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 11px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: var(--transition-smooth);
+    }
+
+    .proto-flip-btn:hover {
+      background: var(--bg-card-elevated);
+      border-color: var(--accent-lime);
+    }
+
+    .proto-flip-btn.is-face-down {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      border-color: var(--accent-lime);
+      box-shadow: 0 4px 16px var(--accent-lime-glow);
+    }
+
+    .proto-sensor-status {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ==========================================================================
+       SCREEN 3: ALARMS LIST & MANAGEMENT
+       ========================================================================== */
+
+    .alarm-list-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 14px;
+      transition: var(--transition-smooth);
+    }
+
+    .alarm-list-item:hover {
+      border-color: var(--border-medium);
+    }
+
+    .alarm-list-item.inactive {
+      opacity: 0.5;
+    }
+
+    .alarm-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .alarm-row-details {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alarm-actions-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .alarm-test-link {
+      background: var(--accent-lime-subtle);
+      border: 1px solid var(--accent-lime-border);
+      color: var(--accent-lime);
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: var(--transition-smooth);
+    }
+
+    .alarm-test-link:hover {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+    }
+
+    .alarm-icon-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .small-icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+
+    .small-icon-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-card-subtle);
+    }
+
+    .small-icon-btn.delete:hover {
+      color: var(--danger);
+    }
+
+    /* ==========================================================================
+       SCREEN 4: PROGRESS & ANALYTICS (Matches Reference Screen 3)
+       ========================================================================== */
+
+    .segmented-control {
+      display: flex;
+      background: var(--bg-card);
+      border-radius: var(--radius-pill);
+      padding: 4px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .segment-tab {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: var(--radius-pill);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .segment-tab.active {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      box-shadow: 0 2px 10px var(--accent-lime-glow);
+    }
+
+    /* Big Circular Progress (Inspired by 7,842 Steps Ring in Reference) */
+    .progress-hero-ring {
+      position: relative;
+      width: 210px;
+      height: 210px;
+      margin: 8px auto 20px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-hero-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .progress-inner-stat {
+      position: absolute;
+      text-align: center;
+    }
+
+    .stat-sup {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+    }
+
+    .stat-main {
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: -1.2px;
+      line-height: 1.05;
+      color: var(--text-primary);
+    }
+
+    .stat-unit {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-lime);
+      margin-top: 2px;
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* 7-Day Activity Chart Bars */
+    .bar-chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .chart-bars-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 120px;
+      padding-top: 15px;
+      gap: 8px;
+    }
+
+    .chart-bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .bar-pillar {
+      width: 100%;
+      max-width: 26px;
+      background: #24242c;
+      border-radius: var(--radius-pill);
+      transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+      min-height: 8px;
+    }
+
+    .chart-bar-col.today .bar-pillar {
+      background: var(--accent-lime);
+      box-shadow: 0 0 12px var(--accent-lime-glow);
+    }
+
+    .bar-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .chart-bar-col.today .bar-label {
+      color: var(--accent-lime);
+    }
+
+    /* Recent Sessions List */
+    .recent-session-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .session-info-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .session-tag-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--bg-card-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-lime);
+    }
+
+    .session-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .session-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .check-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================================================
+       SCREEN 5: SETTINGS & PROTOTYPE SPECS
+       ========================================================================== */
+
+    .settings-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 6px 18px;
+      margin-bottom: 18px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-label-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .settings-label-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .pill-select {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Architecture Disclosure Card */
+    .arch-card {
+      background: #111115;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .arch-card h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--accent-lime);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .arch-card p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .arch-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .arch-pill {
+      background: var(--bg-card-subtle);
+      color: var(--accent-lime);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+      height: fit-content;
+    }
+
+    /* ==========================================================================
+       BOTTOM NAVIGATION BAR (Inspired by Reference Bar)
+       ========================================================================== */
+
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 72px;
+      background: var(--bg-nav);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 10px 10px 10px;
+      z-index: 40;
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      transition: var(--transition-smooth);
+      flex: 1;
+      max-width: 76px;
+    }
+
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+      margin-bottom: 4px;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-item span {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: -0.1px;
+    }
+
+    .nav-item:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      color: var(--accent-lime);
+    }
+
+    .nav-item.active svg {
+      transform: translateY(-2px);
+    }
+
+    /* Android Home Indicator Bar */
+    .home-indicator {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 4px;
+      z-index: 55;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       FULL-SCREEN MODAL OVERLAYS (Alarm Ringing, Edit Alarm, Completed)
+       ========================================================================== */
+
+    .overlay-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .overlay-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Bottom Sheet Modal Container */
+    .modal-sheet {
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: 32px 32px 0 0;
+      padding: 24px;
+      max-height: 90%;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      scrollbar-width: none;
+    }
+
+    .overlay-backdrop.active .modal-sheet {
+      transform: translateY(0);
+    }
+
+    .sheet-handle {
+      width: 38px;
+      height: 4px;
+      background: #3a3a42;
+      border-radius: 4px;
+      margin: 0 auto 18px auto;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .input-text {
+      width: 100%;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .input-text:focus {
+      border-color: var(--accent-lime);
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .day-toggle-btn {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .day-toggle-btn.active {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      border-color: var(--accent-lime);
+    }
+
+    /* ==========================================================================
+       FULLSCREEN RINGING ALARM & STEP CHALLENGE OVERLAY
+       ========================================================================== */
+
+    .ringing-screen-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #08080a;
+      z-index: 120;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 50px 24px 34px 24px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.96);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    .ringing-screen-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* Ambient Pulsing Background Glow */
+    .ringing-bg-glow {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, var(--accent-lime-glow) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: ringingGlowPulse 1.4s infinite alternate ease-in-out;
+    }
+
+    @keyframes ringingGlowPulse {
+      0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.4; }
+      100% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+    }
+
+    .ringing-header {
+      text-align: center;
+      z-index: 2;
+    }
+
+    .ringing-bell-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--accent-lime-subtle);
+      border: 2px solid var(--accent-lime);
+      color: var(--accent-lime);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+      animation: bellShake 0.6s infinite ease-in-out;
+    }
+
+    @keyframes bellShake {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(14deg); }
+      40% { transform: rotate(-14deg); }
+      60% { transform: rotate(8deg); }
+      80% { transform: rotate(-8deg); }
+    }
+
+    .ringing-time-text {
+      font-size: 54px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .ringing-label-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-lime);
+      margin-top: 8px;
+    }
+
+    /* Step Challenge Center Ring */
+    .ringing-challenge-box {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      padding: 22px;
+      text-align: center;
+      margin: 16px 0;
+      z-index: 2;
+    }
+
+    .ringing-step-ring {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      margin: 0 auto 14px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ringing-step-ring svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .step-ring-track {
+      fill: none;
+      stroke: #23232b;
+      stroke-width: 14;
+    }
+
+    .step-ring-fill {
+      fill: none;
+      stroke: var(--accent-lime);
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-dasharray: 471;
+      stroke-dashoffset: 471;
+      transition: stroke-dashoffset 0.3s ease;
+      filter: drop-shadow(0 0 12px var(--accent-lime-glow));
+    }
+
+    .step-ring-content {
+      position: absolute;
+      text-align: center;
+    }
+
+    .step-counter-huge {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .step-counter-goal {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .ringing-challenge-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-bottom: 14px;
+    }
+
+    /* Step Simulation Prototype Buttons */
+    .step-simulation-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .btn-step-sim {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-medium);
+      color: var(--text-primary);
+      padding: 10px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-step-sim:hover {
+      background: var(--accent-lime-subtle);
+      border-color: var(--accent-lime);
+      color: var(--accent-lime);
+    }
+
+    .btn-dismiss-alarm {
+      width: 100%;
+      padding: 18px;
+      border-radius: var(--radius-pill);
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition-smooth);
+      z-index: 2;
+    }
+
+    .btn-dismiss-alarm.disabled {
+      background: #202026;
+      color: var(--text-muted);
+      cursor: not-allowed;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-dismiss-alarm.unlocked {
+      background: var(--accent-lime);
+      color: var(--text-inverse);
+      box-shadow: 0 4px 25px var(--accent-lime-glow);
+      animation: pulseBtn 1s infinite alternate;
+    }
+
+    @keyframes pulseBtn {
+      from { transform: scale(1); }
+      to { transform: scale(1.02); }
+    }
+
+    /* Confetti Canvas for Completion */
+    #celebration-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 90;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Android Phone Mockup Container -->
+  <div class="app-viewport" id="appViewport">
+
+    <!-- Top Android Status Bar -->
+    <div class="status-bar">
+      <div id="liveClockDisplay">09:41</div>
+      <div class="status-bar-notch"></div>
+      <div class="status-bar-icons">
+        <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.25c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l.64-.64C7.93 20.26 9.88 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7 0-1.63.56-3.13 1.5-4.34l9.84 9.84c-1.21.94-2.71 1.5-4.34 1.5z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M17 4h-3V2h-4v2H7c-.55 0-1 .45-1 1v16c0 .55.45 1 1 1h10c.55 0 1-.45 1-1V5c0-.55-.45-1-1-1zm-1 16H8V6h8v14z"/></svg>
+      </div>
+    </div>
+
+    <!-- Prototype Mode Quick Bar -->
+    <div class="prototype-bar">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="prototype-tag">PROTOTYPE</span>
+        <span>Android Review</span>
+      </div>
+      <div class="proto-quick-actions">
+        <button class="proto-btn" id="protoQuickFlipBtn" title="Simulate placing phone face down or up">
+          <span>📱</span> <span id="protoQuickFlipText">Flip Down</span>
+        </button>
+        <button class="proto-btn" id="protoQuickRingBtn" title="Trigger Ringing Alarm Immediately">
+          <span>🔔</span> Test Ring
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen Content Viewport -->
+    <div class="screen-container">
+
+      <!-- ===================================================================
+           SCREEN 1: HOME DASHBOARD
+           =================================================================== -->
+      <div class="screen active" id="screenHome">
+        <div class="screen-header">
+          <div class="user-greeting">
+            <h1 id="homeGreetingTitle">Hi Alex 👋</h1>
+            <p id="homeDateDisplay">Ready to focus? Saturday, Oct 31</p>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn" id="headerAlarmBellBtn" title="Active Alarms">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              <div class="badge-dot" id="alarmActiveBadge"></div>
+            </button>
+            <button class="icon-btn primary" id="headerNewAlarmBtn" title="Create New Alarm">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hero Card (Neon Lime - Study Session) -->
+        <div class="hero-lime-card" id="homeHeroStartBtn">
+          <span class="pill-tag">DEEP WORK SPRINT</span>
+          <h2>Start a Study<br>Session</h2>
+          <p>25 min • Focus block with Flip-to-Start</p>
+          <div class="hero-footer">
+            <button class="btn-dark-pill">
+              Start Session
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <div class="hero-badge-icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Progress Card (Semicircle Gauge inspired by Reference) -->
+        <div class="card">
+          <div class="progress-card-title">
+            <span>Today's Focus Goal</span>
+            <span class="chip-badge lime" id="homeGoalChip">3h Goal</span>
+          </div>
+
+          <div class="gauge-wrapper">
+            <svg class="gauge-svg" viewBox="0 0 200 120">
+              <!-- Semicircle Arc (radius 80, centered at 100, 100) -->
+              <path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" />
+              <path class="gauge-fill" id="homeGaugeFill" d="M 20 100 A 80 80 0 0 1 180 100" />
+            </svg>
+            <div class="gauge-center-text">
+              <div class="gauge-percentage" id="homeGaugePercent">75%</div>
+              <div class="gauge-label">Completed</div>
+            </div>
+          </div>
+
+          <!-- 3-Column Metrics (Calories/Heart/Time in ref -> Time/Sessions/Streak) -->
+          <div class="metrics-row">
+            <div class="metric-col">
+              <div class="metric-icon-bubble">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
+              <div class="metric-value" id="homeMetricTime">2h 15m</div>
+              <div class="metric-sub">Focus Time</div>
+            </div>
+
+            <div class="metric-col">
+              <div class="metric-icon-bubble">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              </div>
+              <div class="metric-value" id="homeMetricSessions">4 done</div>
+              <div class="metric-sub">Sessions</div>
+            </div>
+
+            <div class="metric-col">
+              <div class="metric-icon-bubble">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+              </div>
+              <div class="metric-value" id="homeMetricStreak">5 days</div>
+              <div class="metric-sub">Streak</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Scheduled Alarm Card -->
+        <div class="section-title-row">
+          <span class="section-title">Next Alarm</span>
+          <span class="section-link" id="homeViewAlarmsLink">View All</span>
+        </div>
+
+        <div class="card" id="homeNextAlarmCard">
+          <div class="alarm-card-header">
+            <div>
+              <div class="alarm-time-display">
+                <span id="nextAlarmTime">06:30</span>
+                <span class="alarm-ampm" id="nextAlarmAmPm">AM</span>
+              </div>
+              <div class="alarm-label" id="nextAlarmLabel">Morning Math & Physics</div>
+              <div class="alarm-meta">
+                <span class="chip-badge" id="nextAlarmDays">Mon - Fri</span>
+                <span class="chip-badge lime" id="nextAlarmChallengeBadge">🏃 30 Steps</span>
+              </div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="nextAlarmToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="alarm-actions-strip">
+            <button class="alarm-test-link" id="homeTestAlarmBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Test Ringing Now
+            </button>
+            <span style="font-size:11px; color:var(--text-muted);">Smart Alarm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           SCREEN 2: STUDY TIMER (Flip to Start)
+           =================================================================== -->
+      <div class="screen" id="screenTimer">
+        <div class="screen-header">
+          <div class="user-greeting">
+            <h1>Study Timer</h1>
+            <p>Flip phone face down to start</p>
+          </div>
+          <button class="icon-btn" id="timerResetTopBtn" title="Reset Session">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          </button>
+        </div>
+
+        <div class="timer-screen-layout">
+          <!-- Preset selector buttons -->
+          <div class="preset-chips-row" id="timerPresetsList">
+            <button class="preset-chip active" data-mins="25">25 min</button>
+            <button class="preset-chip" data-mins="45">45 min</button>
+            <button class="preset-chip" data-mins="60">60 min</button>
+            <button class="preset-chip" data-mins="90">90 min</button>
+            <button class="preset-chip" id="presetCustomBtn">Custom</button>
+          </div>
+
+          <!-- Circular Countdown Gauge -->
+          <div class="timer-ring-container">
+            <svg class="timer-svg" viewBox="0 0 270 270">
+              <circle class="timer-track-circle" cx="135" cy="135" r="120" />
+              <circle class="timer-fill-circle" id="timerProgressRing" cx="135" cy="135" r="120" />
+            </svg>
+            <div class="timer-inner-content">
+              <div class="timer-state-pill ready" id="timerStatusPill">
+                <span class="pulse-dot"></span>
+                <span id="timerStatusLabel">READY TO FLIP</span>
+              </div>
+              <div class="timer-time-big" id="timerTimeDisplay">25:00</div>
+              <div class="timer-session-name" id="timerDurationSub">Focus Block • 25 mins</div>
+            </div>
+          </div>
+
+          <!-- Flip State Instructions Box -->
+          <div class="flip-instruction-card" id="flipInstructionBox">
+            <div class="flip-icon-wrap" id="flipIconWrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            </div>
+            <div class="flip-instruction-text">
+              <h4 id="flipInstructionTitle">Flip phone face down to start</h4>
+              <p id="flipInstructionDesc">The countdown will pause whenever you pick up or turn your phone face up.</p>
+            </div>
+          </div>
+
+          <!-- Primary Timer Actions -->
+          <div class="timer-actions-row">
+            <button class="btn-secondary" id="timerEndSessionBtn">End Session</button>
+            <button class="btn-primary-lime" id="timerManualToggleBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span id="timerManualBtnText">Simulate Flip</span>
+            </button>
+          </div>
+
+          <!-- Prototype Sensor Simulation Panel -->
+          <div class="prototype-interactive-box">
+            <div class="proto-box-header">
+              <span class="proto-box-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"></path></svg>
+                SENSOR SIMULATOR (DESKTOP REVIEW)
+              </span>
+              <span class="prototype-tag">PROTOTYPE</span>
+            </div>
+
+            <button class="proto-flip-btn" id="protoSimulateFlipToggleBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span id="protoFlipStatusText">Phone is Face UP — Click to Flip Face DOWN</span>
+            </button>
+
+            <div class="proto-sensor-status">
+              <span>Hardware Sensors: <strong id="protoHardwareSensorStatus">Listening</strong></span>
+              <span style="color:var(--accent-lime); cursor:pointer;" id="protoSensorPermissionLink">Request API</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           SCREEN 3: ALARMS LIST & MANAGEMENT
+           =================================================================== -->
+      <div class="screen" id="screenAlarms">
+        <div class="screen-header">
+          <div class="user-greeting">
+            <h1>Alarms</h1>
+            <p>Smart wake-up & step challenge</p>
+          </div>
+          <button class="icon-btn primary" id="alarmsAddAlarmBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+
+        <div id="alarmsListContainer">
+          <!-- Dynamically populated from JS -->
+        </div>
+
+        <div class="card" style="margin-top:20px; background:transparent; border-style:dashed;">
+          <div style="text-align:center; padding:8px 0;">
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Want to inspect the ringing & step-challenge screen right now?</p>
+            <button class="btn-dark-pill" id="alarmDirectTestBtn" style="margin:0 auto; padding:10px 18px; font-size:13px;">
+              ⚡ Launch Ringing Alarm Demo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           SCREEN 4: PROGRESS & ANALYTICS (Matches Reference Screen 3)
+           =================================================================== -->
+      <div class="screen" id="screenProgress">
+        <div class="screen-header">
+          <div class="user-greeting">
+            <h1>Activity</h1>
+            <p>Study progress & discipline</p>
+          </div>
+          <button class="icon-btn" id="progressFilterIconBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+          </button>
+        </div>
+
+        <!-- Segmented Control: Day / Week / Month -->
+        <div class="segmented-control">
+          <div class="segment-tab active" data-range="day">Day</div>
+          <div class="segment-tab" data-range="week">Week</div>
+          <div class="segment-tab" data-range="month">Month</div>
+        </div>
+
+        <!-- Big Center Progress Ring (Inspired by 7,842 Steps in reference) -->
+        <div class="progress-hero-ring">
+          <svg class="progress-hero-svg" viewBox="0 0 210 210">
+            <circle class="timer-track-circle" cx="105" cy="105" r="92" stroke-width="15" />
+            <circle class="timer-fill-circle" id="analyticsRingFill" cx="105" cy="105" r="92" stroke-width="15" stroke-dasharray="578" stroke-dashoffset="144" />
+          </svg>
+          <div class="progress-inner-stat">
+            <div class="stat-sup">Today</div>
+            <div class="stat-main" id="progressMinutesDisplay">135</div>
+            <div class="stat-unit">Minutes</div>
+            <div class="stat-sub" id="progressGoalSub">Goal: 180 min (75%)</div>
+          </div>
+        </div>
+
+        <!-- 3-Metrics Row -->
+        <div class="card" style="padding:16px 20px;">
+          <div class="metrics-row" style="margin-top:0; padding-top:0; border-top:none;">
+            <div class="metric-col">
+              <div class="metric-icon-bubble">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              </div>
+              <div class="metric-value" id="statSessionsDone">4</div>
+              <div class="metric-sub">Sessions</div>
+            </div>
+
+            <div class="metric-col">
+              <div class="metric-icon-bubble">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
+              <div class="metric-value" id="statLongestBlock">45m</div>
+              <div class="metric-sub">Max Block</div>
+            </div>
+
+            <div class="metric-col">
+              <div class="metric-icon-bubble">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+              </div>
+              <div class="metric-value" id="statAlarmsWalked">3 / 3</div>
+              <div class="metric-sub">Alarms Beaten</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7-Day Activity Bar Chart -->
+        <div class="bar-chart-card">
+          <div class="section-title-row" style="margin-top:0;">
+            <span class="section-title" style="font-size:15px;">7-Day Focus Hours</span>
+            <span style="font-size:12px; font-weight:700; color:var(--accent-lime);" id="chartWeekTotal">14.5 hrs</span>
+          </div>
+
+          <div class="chart-bars-wrap" id="chartWeekBars">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Recent Sessions List -->
+        <div class="section-title-row">
+          <span class="section-title">Recent Sessions</span>
+          <span class="section-link" id="clearHistoryLink">Clear</span>
+        </div>
+
+        <div id="recentSessionsList">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           SCREEN 5: SETTINGS & PROTOTYPE HONESTY
+           =================================================================== -->
+      <div class="screen" id="screenSettings">
+        <div class="screen-header">
+          <div class="user-greeting">
+            <h1>Settings</h1>
+            <p>Preferences & Android specs</p>
+          </div>
+        </div>
+
+        <!-- General App Preferences -->
+        <div class="settings-group">
+          <div class="settings-row">
+            <div>
+              <div class="settings-label-title">Daily Study Goal</div>
+              <div class="settings-label-desc">Target focus time per day</div>
+            </div>
+            <select class="pill-select" id="settingGoalSelect">
+              <option value="60">1 Hour</option>
+              <option value="120">2 Hours</option>
+              <option value="180" selected>3 Hours</option>
+              <option value="240">4 Hours</option>
+              <option value="300">5 Hours</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <div>
+              <div class="settings-label-title">Audio Synthesizer & Tones</div>
+              <div class="settings-label-desc">Alarm siren & session bells</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="settingSoundToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-row">
+            <div>
+              <div class="settings-label-title">24-Hour Time Format</div>
+              <div class="settings-label-desc">Toggle between 12h AM/PM and 24h</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setting24hToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-row">
+            <div>
+              <div class="settings-label-title">Vibration & Haptics</div>
+              <div class="settings-label-desc">Haptic feedback on state changes</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="settingVibrationToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Honest Prototype & Android Architecture Disclosure -->
+        <div class="arch-card">
+          <h3>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            Android Production Architecture
+          </h3>
+          <p>
+            This prototype models the exact UX flows for your future Android app. In production on Android, web browser limitations are replaced with native APIs:
+          </p>
+
+          <div class="arch-item">
+            <span class="arch-pill">Exact Alarms</span>
+            <span>Android uses <code>AlarmManager.setExactAndAllowWhileIdle()</code> + <code>USE_EXACT_ALARM</code> permission so alarms fire when phone is locked or deep sleeping.</span>
+          </div>
+
+          <div class="arch-item">
+            <span class="arch-pill">Background Timer</span>
+            <span>Browsers throttle background tabs. Production Android will use a <code>ForegroundService</code> with a persistent notification channel to guarantee countdown accuracy.</span>
+          </div>
+
+          <div class="arch-item">
+            <span class="arch-pill">Face-Down Sensor</span>
+            <span>Uses <code>SensorManager</code> listening to <code>TYPE_ROTATION_VECTOR</code> with a low-power partial wake lock, avoiding accidental wakeups.</span>
+          </div>
+
+          <div class="arch-item">
+            <span class="arch-pill">Step Counting</span>
+            <span>Uses native hardware <code>Sensor.TYPE_STEP_DETECTOR</code> or Google Health Connect, preventing battery drain from manual accelerometer calculations.</span>
+          </div>
+        </div>
+
+        <!-- Reset Prototype Data -->
+        <div style="text-align:center; padding:10px 0 20px 0;">
+          <button class="btn-secondary" id="btnResetAllData" style="color:var(--danger); border-color:rgba(255,69,58,0.25);">
+            Reset All Prototype Data
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Fixed Bottom Navigation Bar (Matches Reference Image) -->
+    <div class="bottom-nav">
+      <button class="nav-item active" data-target="screenHome">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>Home</span>
+      </button>
+
+      <button class="nav-item" data-target="screenTimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span>Timer</span>
+      </button>
+
+      <button class="nav-item" data-target="screenAlarms">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="m5 3 4 3"></path><path d="m19 3-4 3"></path></svg>
+        <span>Alarms</span>
+      </button>
+
+      <button class="nav-item" data-target="screenProgress">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+        <span>Progress</span>
+      </button>
+
+      <button class="nav-item" data-target="screenSettings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+
+    <!-- Android Bottom Gesture Indicator Bar -->
+    <div class="home-indicator"></div>
+
+    <!-- ===================================================================
+         MODAL 1: ADD / EDIT ALARM (BOTTOM SHEET)
+         =================================================================== -->
+    <div class="overlay-backdrop" id="modalAlarmBackdrop">
+      <div class="modal-sheet" id="modalAlarmSheet">
+        <div class="sheet-handle"></div>
+        <div class="modal-title">
+          <span id="modalAlarmTitleText">New Alarm</span>
+          <button class="small-icon-btn" id="modalAlarmCloseBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <form id="alarmForm" onsubmit="event.preventDefault();">
+          <input type="hidden" id="editAlarmId" value="">
+
+          <div class="form-group">
+            <label class="form-label">Alarm Time</label>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="time" class="input-text" id="alarmTimeInput" value="07:00" required style="font-size:22px; font-weight:800; text-align:center;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Alarm Label</label>
+            <input type="text" class="input-text" id="alarmLabelInput" placeholder="e.g. Morning Focus & Math" value="Morning Deep Work" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Repeat Days</label>
+            <div class="days-grid" id="alarmDaysGrid">
+              <button type="button" class="day-toggle-btn active" data-day="Mon">M</button>
+              <button type="button" class="day-toggle-btn active" data-day="Tue">T</button>
+              <button type="button" class="day-toggle-btn active" data-day="Wed">W</button>
+              <button type="button" class="day-toggle-btn active" data-day="Thu">T</button>
+              <button type="button" class="day-toggle-btn active" data-day="Fri">F</button>
+              <button type="button" class="day-toggle-btn" data-day="Sat">S</button>
+              <button type="button" class="day-toggle-btn" data-day="Sun">S</button>
+            </div>
+          </div>
+
+          <div class="settings-group" style="padding:4px 14px; margin-bottom:18px;">
+            <div class="settings-row">
+              <div>
+                <div class="settings-label-title">Walk to Dismiss Challenge</div>
+                <div class="settings-label-desc">Requires physical steps to silence</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="alarmWalkToggle" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Expandable Walk Target Field -->
+            <div id="alarmWalkTargetSection" style="padding:10px 0 14px 0; border-top:1px solid var(--border-subtle);">
+              <label class="form-label" style="font-size:11px;">Target Steps Required</label>
+              <div style="display:flex; gap:8px;">
+                <button type="button" class="preset-chip active step-target-chip" data-steps="20">20 Steps</button>
+                <button type="button" class="preset-chip step-target-chip" data-steps="30">30 Steps</button>
+                <button type="button" class="preset-chip step-target-chip" data-steps="50">50 Steps</button>
+                <input type="number" class="input-text" id="customStepsInput" placeholder="Custom" min="5" max="500" style="width:90px; padding:8px 12px; font-size:13px; text-align:center;">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Alarm Tone</label>
+            <select class="input-text" id="alarmToneSelect" style="padding:12px 14px;">
+              <option value="pulse">Digital Pulse Siren (Energetic)</option>
+              <option value="chime">Rise & Shine Chime (Melodic)</option>
+              <option value="radar">Urgent Radar Pulse (High Alert)</option>
+              <option value="zen">Harmonic Zen Gong (Gentle)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:12px; margin-top:24px;">
+            <button type="button" class="btn-secondary" id="modalAlarmCancelBtn">Cancel</button>
+            <button type="submit" class="btn-primary-lime" id="modalAlarmSaveBtn">Save Alarm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         MODAL 2: CUSTOM TIMER DURATION
+         =================================================================== -->
+    <div class="overlay-backdrop" id="modalCustomTimerBackdrop">
+      <div class="modal-sheet" style="padding-bottom:30px;">
+        <div class="sheet-handle"></div>
+        <div class="modal-title">
+          <span>Custom Study Duration</span>
+          <button class="small-icon-btn" id="modalCustomTimerCloseBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration in Minutes (1 - 180)</label>
+          <input type="number" class="input-text" id="customTimerMinutesInput" min="1" max="180" value="35" style="font-size:26px; font-weight:800; text-align:center;">
+        </div>
+        <div style="display:flex; gap:12px; margin-top:16px;">
+          <button class="btn-secondary" id="modalCustomTimerCancelBtn">Cancel</button>
+          <button class="btn-primary-lime" id="modalCustomTimerApplyBtn">Set Duration</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         FULLSCREEN OVERLAY: RINGING ALARM & STEP CHALLENGE
+         =================================================================== -->
+    <div class="ringing-screen-overlay" id="ringingScreenOverlay">
+      <div class="ringing-bg-glow"></div>
+
+      <!-- Top Time & Label -->
+      <div class="ringing-header">
+        <div class="ringing-bell-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        </div>
+        <div class="ringing-time-text" id="ringingTimeDisplay">06:30 AM</div>
+        <div class="ringing-label-text" id="ringingAlarmLabel">Morning Math & Physics</div>
+      </div>
+
+      <!-- Center Step Progress Box (If Walk to Dismiss Enabled) -->
+      <div class="ringing-challenge-box" id="ringingChallengeBox">
+        <div class="ringing-step-ring">
+          <svg viewBox="0 0 170 170">
+            <circle class="step-ring-track" cx="85" cy="85" r="70" />
+            <circle class="step-ring-fill" id="ringingStepRingFill" cx="85" cy="85" r="70" />
+          </svg>
+          <div class="step-ring-content">
+            <div class="step-counter-huge" id="ringingCurrentSteps">0</div>
+            <div class="step-counter-goal" id="ringingStepsGoalSub">of 30 Steps</div>
+          </div>
+        </div>
+
+        <div class="ringing-challenge-desc" id="ringingInstructionNotice">
+          Walk with your phone to turn off the alarm. The dismiss button unlocks when your step goal is reached.
+        </div>
+
+        <!-- Step Simulation Prototype Controls (Clearly Marked) -->
+        <div style="padding-top:10px; border-top:1px dashed var(--border-medium);">
+          <div style="font-size:10px; font-weight:800; color:var(--accent-lime); margin-bottom:6px; letter-spacing:0.5px;">
+            PROTOTYPE STEP SIMULATOR
+          </div>
+          <div class="step-simulation-btns">
+            <button class="btn-step-sim" id="btnSimulateOneStep">
+              <span>👟</span> +1 Step
+            </button>
+            <button class="btn-step-sim" id="btnSimulateFiveSteps">
+              <span>🏃</span> +5 Steps
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Normal Notice if Step Challenge Disabled -->
+      <div id="ringingNormalNotice" style="display:none; text-align:center; margin:20px 0; z-index:2;">
+        <p style="font-size:14px; color:var(--text-secondary);">Standard Alarm Ringing</p>
+      </div>
+
+      <!-- Bottom Dismiss Action -->
+      <button class="btn-dismiss-alarm disabled" id="btnDismissAlarm" disabled>
+        <span id="btnDismissAlarmLabel">Walk 30 steps to dismiss</span>
+      </button>
+    </div>
+
+    <!-- Canvas for Confetti particle animation on session complete -->
+    <canvas id="celebration-canvas"></canvas>
+
+  </div>
+
+  <!-- =======================================================================
+       JAVASCRIPT ARCHITECTURE & SENSORS
+       - Synthesized Web Audio API (No external sound files required)
+       - LocalStorage State Management
+       - Flip-to-Start Sensor & Debounce Logic
+       - Step Detector Accelerometer Filtering & Cooldown
+       ======================================================================= -->
+  <script>
+    (function () {
+      'use strict';
+
+      /* -----------------------------------------------------------------------
+         1. AUDIO SYNTHESIZER (Pure Web Audio API — No External Audio Assets)
+         ----------------------------------------------------------------------- */
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.alarmOsc1 = null;
+          this.alarmOsc2 = null;
+          this.alarmInterval = null;
+          this.isAlarmRinging = false;
+        }
+
+        initContext() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              this.ctx = new AudioCtx();
+            }
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
+
+        playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.2) {
+          if (!appState.settings.soundEnabled) return;
+          this.initContext();
+          if (!this.ctx) return;
+
+          try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+          } catch (e) {
+            console.warn('Audio tone error:', e);
+          }
+        }
+
+        playFlipDownTactile() {
+          // Deep mechanical tactile click / swoosh
+          this.playTone(180, 'triangle', 0.08, 0.3);
+          setTimeout(() => this.playTone(320, 'sine', 0.1, 0.25), 40);
+        }
+
+        playFlipUpAlert() {
+          // Warning notification chime
+          this.playTone(480, 'sine', 0.12, 0.25);
+          setTimeout(() => this.playTone(360, 'sine', 0.18, 0.25), 100);
+        }
+
+        playStepClick() {
+          // Crisp soft haptic tick for step increment
+          this.playTone(600, 'sine', 0.04, 0.12);
+        }
+
+        playSuccessFanfare() {
+          // C Major celebratory arpeggio: C5, E5, G5, C6
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            setTimeout(() => this.playTone(freq, 'triangle', 0.3, 0.35), idx * 110);
+          });
+        }
+
+        startAlarmSiren(tone = 'pulse') {
+          if (this.isAlarmRinging) return;
+          this.initContext();
+          this.isAlarmRinging = true;
+
+          const playPulseBeep = () => {
+            if (!this.isAlarmRinging) return;
+            // Alternating energetic dual-tone beep
+            this.playTone(880, 'square', 0.12, 0.15);
+            setTimeout(() => {
+              if (this.isAlarmRinging) this.playTone(1174.66, 'square', 0.15, 0.18);
+            }, 140);
+          };
+
+          playPulseBeep();
+          this.alarmInterval = setInterval(playPulseBeep, 500);
+        }
+
+        stopAlarmSiren() {
+          this.isAlarmRinging = false;
+          if (this.alarmInterval) {
+            clearInterval(this.alarmInterval);
+            this.alarmInterval = null;
+          }
+        }
+      }
+
+      const sounds = new SoundEngine();
+
+      /* -----------------------------------------------------------------------
+         2. LOCALSTORAGE STATE MANAGEMENT & SEED DATA
+         ----------------------------------------------------------------------- */
+      const STORAGE_KEY = 'ZENITH_APP_DATA_v1';
+
+      const defaultState = {
+        settings: {
+          dailyGoalMinutes: 180,
+          soundEnabled: true,
+          timeFormat24: false,
+          vibrationEnabled: true
+        },
+        alarms: [
+          {
+            id: 'alarm_1',
+            time: '06:30',
+            label: 'Morning Math & Physics',
+            days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+            active: true,
+            walkToDismiss: true,
+            stepTarget: 30,
+            tone: 'pulse'
+          },
+          {
+            id: 'alarm_2',
+            time: '08:00',
+            label: 'Weekend Exam Prep',
+            days: ['Sat', 'Sun'],
+            active: false,
+            walkToDismiss: true,
+            stepTarget: 20,
+            tone: 'chime'
+          },
+          {
+            id: 'alarm_3',
+            time: '14:30',
+            label: 'Afternoon Focus Sprint',
+            days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+            active: true,
+            walkToDismiss: false,
+            stepTarget: 0,
+            tone: 'radar'
+          }
+        ],
+        sessions: [
+          { id: 's1', subject: 'Linear Algebra', minutes: 45, date: 'Today, 10:15 AM', timestamp: Date.now() - 3600000 * 4 },
+          { id: 's2', subject: 'Algorithms & Data Structures', minutes: 45, date: 'Today, 11:30 AM', timestamp: Date.now() - 3600000 * 2.5 },
+          { id: 's3', subject: 'Operating Systems', minutes: 25, date: 'Today, 02:00 PM', timestamp: Date.now() - 3600000 * 1 },
+          { id: 's4', subject: 'Physics Revision', minutes: 20, date: 'Today, 03:15 PM', timestamp: Date.now() - 1800000 }
+        ],
+        timerPresetMins: 25
+      };
+
+      function loadAppState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            return JSON.parse(raw);
+          }
+        } catch (e) {
+          console.warn('Failed reading localStorage, using defaults:', e);
+        }
+        return JSON.parse(JSON.stringify(defaultState));
+      }
+
+      function saveAppState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        } catch (e) {
+          console.error('Failed saving localStorage:', e);
+        }
+      }
+
+      let appState = loadAppState();
+
+      /* -----------------------------------------------------------------------
+         3. NAVIGATION & SCREEN SWITCHING
+         ----------------------------------------------------------------------- */
+      const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+      const screens = document.querySelectorAll('.screen');
+
+      function navigateTo(screenId) {
+        screens.forEach(s => s.classList.remove('active'));
+        navItems.forEach(n => n.classList.remove('active'));
+
+        const targetScreen = document.getElementById(screenId);
+        if (targetScreen) {
+          targetScreen.classList.add('active');
+        }
+
+        const activeNav = document.querySelector(`.bottom-nav .nav-item[data-target="${screenId}"]`);
+        if (activeNav) {
+          activeNav.classList.add('active');
+        }
+
+        // Screen-specific refresh hooks
+        if (screenId === 'screenHome') renderHomeDashboard();
+        if (screenId === 'screenProgress') renderProgressScreen();
+        if (screenId === 'screenAlarms') renderAlarmsList();
+      }
+
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          sounds.initContext();
+          navigateTo(item.getAttribute('data-target'));
+        });
+      });
+
+      /* -----------------------------------------------------------------------
+         4. STUDY TIMER ENGINE (With Flip-to-Start State Machine)
+         States: 'READY' | 'STUDYING' | 'PAUSED' | 'COMPLETED'
+         ----------------------------------------------------------------------- */
+      const timerState = {
+        status: 'READY',
+        totalSeconds: 25 * 60,
+        remainingSeconds: 25 * 60,
+        interval: null,
+        isFaceDown: false,
+        debounceTimeout: null
+      };
+
+      const timerTimeDisplay = document.getElementById('timerTimeDisplay');
+      const timerProgressRing = document.getElementById('timerProgressRing');
+      const timerStatusPill = document.getElementById('timerStatusPill');
+      const timerStatusLabel = document.getElementById('timerStatusLabel');
+      const timerDurationSub = document.getElementById('timerDurationSub');
+      const flipInstructionBox = document.getElementById('flipInstructionBox');
+      const flipInstructionTitle = document.getElementById('flipInstructionTitle');
+      const flipInstructionDesc = document.getElementById('flipInstructionDesc');
+      const protoFlipStatusText = document.getElementById('protoFlipStatusText');
+      const protoSimulateFlipToggleBtn = document.getElementById('protoSimulateFlipToggleBtn');
+      const protoQuickFlipBtn = document.getElementById('protoQuickFlipBtn');
+      const protoQuickFlipText = document.getElementById('protoQuickFlipText');
+      const timerManualToggleBtn = document.getElementById('timerManualToggleBtn');
+      const timerManualBtnText = document.getElementById('timerManualBtnText');
+
+      const RING_CIRCUMFERENCE = 2 * Math.PI * 120; // r=120 -> 753.98
+
+      function formatTime(secs) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+
+      function updateTimerUI() {
+        timerTimeDisplay.textContent = formatTime(timerState.remainingSeconds);
+
+        // Calculate stroke offset
+        const fraction = timerState.remainingSeconds / timerState.totalSeconds;
+        const offset = RING_CIRCUMFERENCE * (1 - fraction);
+        timerProgressRing.style.strokeDashoffset = offset;
+
+        // Update status pill styling
+        timerStatusPill.className = 'timer-state-pill ' + timerState.status.toLowerCase();
+
+        if (timerState.status === 'READY') {
+          timerStatusLabel.textContent = 'READY TO FLIP';
+          flipInstructionTitle.textContent = 'Flip phone face down to start';
+          flipInstructionDesc.textContent = 'The countdown will strictly wait until your phone is face down on the desk.';
+          timerManualBtnText.textContent = 'Simulate Flip Down';
+        } else if (timerState.status === 'STUDYING') {
+          timerStatusLabel.textContent = 'STUDYING (FACE DOWN)';
+          flipInstructionTitle.textContent = 'Focused Session Active';
+          flipInstructionDesc.textContent = 'Keep your phone face down. Lifting or turning your phone will automatically pause.';
+          timerManualBtnText.textContent = 'Simulate Lift (Pause)';
+        } else if (timerState.status === 'PAUSED') {
+          timerStatusLabel.textContent = 'PAUSED (FACE UP)';
+          flipInstructionTitle.textContent = 'Phone Lifted — Session Paused';
+          flipInstructionDesc.textContent = 'Place phone back face down to seamlessly resume your focus countdown.';
+          timerManualBtnText.textContent = 'Simulate Flip Down';
+        } else if (timerState.status === 'COMPLETED') {
+          timerStatusLabel.textContent = 'SESSION COMPLETED 🎉';
+          flipInstructionTitle.textContent = 'Focus Goal Reached!';
+          flipInstructionDesc.textContent = 'Awesome work! Your study minutes have been recorded to your daily progress.';
+          timerManualBtnText.textContent = 'Start New Session';
+        }
+
+        // Update Prototype simulation button texts
+        if (timerState.isFaceDown) {
+          protoSimulateFlipToggleBtn.classList.add('is-face-down');
+          protoFlipStatusText.textContent = 'Phone is FACE DOWN (Active) — Click to Lift Face UP';
+          protoQuickFlipBtn.classList.add('active');
+          protoQuickFlipText.textContent = 'Face Down';
+        } else {
+          protoSimulateFlipToggleBtn.classList.remove('is-face-down');
+          protoFlipStatusText.textContent = 'Phone is FACE UP (Paused) — Click to Flip Face DOWN';
+          protoQuickFlipBtn.classList.remove('active');
+          protoQuickFlipText.textContent = 'Flip Down';
+        }
+      }
+
+      function setTimerDuration(mins) {
+        if (timerState.status === 'STUDYING') {
+          clearInterval(timerState.interval);
+        }
+        timerState.totalSeconds = mins * 60;
+        timerState.remainingSeconds = mins * 60;
+        timerState.status = 'READY';
+        timerDurationSub.textContent = `Focus Block • ${mins} mins`;
+        appState.timerPresetMins = mins;
+        saveAppState();
+        updateTimerUI();
+      }
+
+      function startCountdown() {
+        if (timerState.interval) clearInterval(timerState.interval);
+        timerState.status = 'STUDYING';
+        updateTimerUI();
+        sounds.playFlipDownTactile();
+
+        timerState.interval = setInterval(() => {
+          if (timerState.remainingSeconds > 0) {
+            timerState.remainingSeconds--;
+            updateTimerUI();
+            if (timerState.remainingSeconds === 0) {
+              completeTimerSession();
+            }
+          }
+        }, 1000);
+      }
+
+      function pauseCountdown() {
+        if (timerState.status === 'STUDYING') {
+          clearInterval(timerState.interval);
+          timerState.status = 'PAUSED';
+          updateTimerUI();
+          sounds.playFlipUpAlert();
+        }
+      }
+
+      function completeTimerSession() {
+        clearInterval(timerState.interval);
+        timerState.status = 'COMPLETED';
+        updateTimerUI();
+        sounds.playSuccessFanfare();
+        triggerConfetti();
+
+        // Record session to history & update today stats
+        const minsCompleted = Math.round(timerState.totalSeconds / 60);
+        const newSession = {
+          id: 'sess_' + Date.now(),
+          subject: 'Deep Work Sprint',
+          minutes: minsCompleted,
+          date: 'Just now',
+          timestamp: Date.now()
+        };
+
+        appState.sessions.unshift(newSession);
+        saveAppState();
+        renderHomeDashboard();
+        renderProgressScreen();
+      }
+
+      function resetTimer() {
+        clearInterval(timerState.interval);
+        timerState.status = 'READY';
+        timerState.remainingSeconds = timerState.totalSeconds;
+        updateTimerUI();
+      }
+
+      // Handler for Phone Orientation / Flip Detection
+      function handleFlipStateChange(isFaceDownNow) {
+        // Debounce to prevent false triggers during movement
+        clearTimeout(timerState.debounceTimeout);
+        timerState.debounceTimeout = setTimeout(() => {
+          if (timerState.isFaceDown === isFaceDownNow) return;
+          timerState.isFaceDown = isFaceDownNow;
+
+          if (isFaceDownNow) {
+            // Phone placed face down
+            if (timerState.status === 'READY' || timerState.status === 'PAUSED') {
+              startCountdown();
+            }
+          } else {
+            // Phone picked up or face up
+            if (timerState.status === 'STUDYING') {
+              pauseCountdown();
+            }
+          }
+          updateTimerUI();
+        }, 350); // 350ms stability delay
+      }
+
+      // Simulation Button Click Listeners
+      function toggleSimulatedFlip() {
+        sounds.initContext();
+        handleFlipStateChange(!timerState.isFaceDown);
+      }
+
+      protoSimulateFlipToggleBtn.addEventListener('click', toggleSimulatedFlip);
+      protoQuickFlipBtn.addEventListener('click', toggleSimulatedFlip);
+      timerManualToggleBtn.addEventListener('click', () => {
+        sounds.initContext();
+        if (timerState.status === 'COMPLETED') {
+          resetTimer();
+        } else {
+          toggleSimulatedFlip();
+        }
+      });
+
+      document.getElementById('timerResetTopBtn').addEventListener('click', resetTimer);
+      document.getElementById('timerEndSessionBtn').addEventListener('click', () => {
+        if (timerState.status === 'STUDYING' || timerState.status === 'PAUSED') {
+          if (confirm('End this study session early?')) {
+            resetTimer();
+          }
+        } else {
+          resetTimer();
+        }
+      });
+
+      // Preset buttons handling
+      const presetButtons = document.querySelectorAll('#timerPresetsList .preset-chip[data-mins]');
+      presetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          presetButtons.forEach(b => b.classList.remove('active'));
+          document.getElementById('presetCustomBtn').classList.remove('active');
+          btn.classList.add('active');
+          const mins = parseInt(btn.getAttribute('data-mins'), 10);
+          setTimerDuration(mins);
+        });
+      });
+
+      // Custom Preset Modal
+      const modalCustomTimerBackdrop = document.getElementById('modalCustomTimerBackdrop');
+      document.getElementById('presetCustomBtn').addEventListener('click', () => {
+        modalCustomTimerBackdrop.classList.add('active');
+      });
+      document.getElementById('modalCustomTimerCloseBtn').addEventListener('click', () => {
+        modalCustomTimerBackdrop.classList.remove('active');
+      });
+      document.getElementById('modalCustomTimerCancelBtn').addEventListener('click', () => {
+        modalCustomTimerBackdrop.classList.remove('active');
+      });
+      document.getElementById('modalCustomTimerApplyBtn').addEventListener('click', () => {
+        const val = parseInt(document.getElementById('customTimerMinutesInput').value, 10);
+        if (val && val > 0 && val <= 300) {
+          presetButtons.forEach(b => b.classList.remove('active'));
+          document.getElementById('presetCustomBtn').classList.add('active');
+          document.getElementById('presetCustomBtn').textContent = `${val}m`;
+          setTimerDuration(val);
+          modalCustomTimerBackdrop.classList.remove('active');
+        }
+      });
+
+      /* -----------------------------------------------------------------------
+         5. REAL HARDWARE ORIENTATION SENSOR LISTENER
+         Detects when phone is physically face down (beta ~ 180 or -180)
+         ----------------------------------------------------------------------- */
+      function initOrientationSensor() {
+        const statusSpan = document.getElementById('protoHardwareSensorStatus');
+
+        if (window.DeviceOrientationEvent) {
+          const onOrientation = (event) => {
+            const beta = event.beta; // Tilt front-to-back [-180, 180]
+            if (beta !== null) {
+              statusSpan.textContent = 'Active (Ready)';
+              // Face down on a table: beta is close to +180 or -180
+              const isFaceDown = Math.abs(beta) > 135;
+              handleFlipStateChange(isFaceDown);
+            }
+          };
+
+          if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            document.getElementById('protoSensorPermissionLink').style.display = 'inline';
+            document.getElementById('protoSensorPermissionLink').addEventListener('click', () => {
+              DeviceOrientationEvent.requestPermission()
+                .then(response => {
+                  if (response === 'granted') {
+                    window.addEventListener('deviceorientation', onOrientation);
+                    statusSpan.textContent = 'Permission Granted';
+                  } else {
+                    statusSpan.textContent = 'Permission Denied';
+                  }
+                })
+                .catch(err => {
+                  statusSpan.textContent = 'Error: ' + err.message;
+                });
+            });
+          } else {
+            window.addEventListener('deviceorientation', onOrientation);
+            statusSpan.textContent = 'Active';
+          }
+        } else {
+          statusSpan.textContent = 'Not Supported (Use Simulator)';
+        }
+      }
+
+      /* -----------------------------------------------------------------------
+         6. ALARMS MANAGEMENT & RINGING LOGIC
+         ----------------------------------------------------------------------- */
+      const alarmsListContainer = document.getElementById('alarmsListContainer');
+      const modalAlarmBackdrop = document.getElementById('modalAlarmBackdrop');
+      const alarmForm = document.getElementById('alarmForm');
+      const alarmWalkToggle = document.getElementById('alarmWalkToggle');
+      const alarmWalkTargetSection = document.getElementById('alarmWalkTargetSection');
+      const stepTargetChips = document.querySelectorAll('.step-target-chip');
+      const customStepsInput = document.getElementById('customStepsInput');
+
+      alarmWalkToggle.addEventListener('change', () => {
+        alarmWalkTargetSection.style.display = alarmWalkToggle.checked ? 'block' : 'none';
+      });
+
+      stepTargetChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          stepTargetChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          customStepsInput.value = '';
+        });
+      });
+
+      customStepsInput.addEventListener('input', () => {
+        stepTargetChips.forEach(c => c.classList.remove('active'));
+      });
+
+      // Open Modal to Add Alarm
+      function openAddAlarmModal() {
+        document.getElementById('editAlarmId').value = '';
+        document.getElementById('modalAlarmTitleText').textContent = 'New Alarm';
+        document.getElementById('alarmTimeInput').value = '07:00';
+        document.getElementById('alarmLabelInput').value = 'Deep Study Block';
+        alarmWalkToggle.checked = true;
+        alarmWalkTargetSection.style.display = 'block';
+        stepTargetChips.forEach((c, idx) => c.classList.toggle('active', idx === 0));
+        customStepsInput.value = '';
+
+        document.querySelectorAll('#alarmDaysGrid .day-toggle-btn').forEach(btn => {
+          const d = btn.getAttribute('data-day');
+          btn.classList.toggle('active', ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(d));
+        });
+
+        modalAlarmBackdrop.classList.add('active');
+      }
+
+      // Open Modal to Edit Alarm
+      function openEditAlarmModal(alarmId) {
+        const al = appState.alarms.find(a => a.id === alarmId);
+        if (!al) return;
+
+        document.getElementById('editAlarmId').value = al.id;
+        document.getElementById('modalAlarmTitleText').textContent = 'Edit Alarm';
+        document.getElementById('alarmTimeInput').value = al.time;
+        document.getElementById('alarmLabelInput').value = al.label;
+        document.getElementById('alarmToneSelect').value = al.tone || 'pulse';
+
+        alarmWalkToggle.checked = al.walkToDismiss;
+        alarmWalkTargetSection.style.display = al.walkToDismiss ? 'block' : 'none';
+
+        let matched = false;
+        stepTargetChips.forEach(c => {
+          const steps = parseInt(c.getAttribute('data-steps'), 10);
+          if (steps === al.stepTarget) {
+            c.classList.add('active');
+            matched = true;
+          } else {
+            c.classList.remove('active');
+          }
+        });
+        if (!matched && al.stepTarget > 0) {
+          customStepsInput.value = al.stepTarget;
+        } else {
+          customStepsInput.value = '';
+        }
+
+        document.querySelectorAll('#alarmDaysGrid .day-toggle-btn').forEach(btn => {
+          const d = btn.getAttribute('data-day');
+          btn.classList.toggle('active', al.days.includes(d));
+        });
+
+        modalAlarmBackdrop.classList.add('active');
+      }
+
+      document.getElementById('alarmsAddAlarmBtn').addEventListener('click', openAddAlarmModal);
+      document.getElementById('headerNewAlarmBtn').addEventListener('click', openAddAlarmModal);
+      document.getElementById('modalAlarmCloseBtn').addEventListener('click', () => modalAlarmBackdrop.classList.remove('active'));
+      document.getElementById('modalAlarmCancelBtn').addEventListener('click', () => modalAlarmBackdrop.classList.remove('active'));
+
+      // Day of Week Toggle inside Alarm Modal
+      document.querySelectorAll('#alarmDaysGrid .day-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('active');
+        });
+      });
+
+      // Save Alarm Handler
+      alarmForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const editId = document.getElementById('editAlarmId').value;
+        const timeVal = document.getElementById('alarmTimeInput').value;
+        const labelVal = document.getElementById('alarmLabelInput').value.trim() || 'Study Alarm';
+        const toneVal = document.getElementById('alarmToneSelect').value;
+        const walkEnabled = alarmWalkToggle.checked;
+
+        let steps = 30;
+        if (walkEnabled) {
+          if (customStepsInput.value) {
+            steps = parseInt(customStepsInput.value, 10) || 30;
+          } else {
+            const activeChip = document.querySelector('.step-target-chip.active');
+            steps = activeChip ? parseInt(activeChip.getAttribute('data-steps'), 10) : 30;
+          }
+        } else {
+          steps = 0;
+        }
+
+        const selectedDays = [];
+        document.querySelectorAll('#alarmDaysGrid .day-toggle-btn.active').forEach(b => {
+          selectedDays.push(b.getAttribute('data-day'));
+        });
+
+        if (editId) {
+          // Edit existing
+          const idx = appState.alarms.findIndex(a => a.id === editId);
+          if (idx !== -1) {
+            appState.alarms[idx] = {
+              ...appState.alarms[idx],
+              time: timeVal,
+              label: labelVal,
+              tone: toneVal,
+              walkToDismiss: walkEnabled,
+              stepTarget: steps,
+              days: selectedDays.length ? selectedDays : ['Every day']
+            };
+          }
+        } else {
+          // Create new
+          const newAlarm = {
+            id: 'alarm_' + Date.now(),
+            time: timeVal,
+            label: labelVal,
+            tone: toneVal,
+            active: true,
+            walkToDismiss: walkEnabled,
+            stepTarget: steps,
+            days: selectedDays.length ? selectedDays : ['Every day']
+          };
+          appState.alarms.push(newAlarm);
+        }
+
+        saveAppState();
+        modalAlarmBackdrop.classList.remove('active');
+        renderAlarmsList();
+        renderHomeDashboard();
+      });
+
+      // Render Alarms List
+      function renderAlarmsList() {
+        alarmsListContainer.innerHTML = '';
+
+        if (!appState.alarms.length) {
+          alarmsListContainer.innerHTML = `
+            <div class="card" style="text-align:center; padding:30px 20px;">
+              <p style="color:var(--text-muted); font-size:13px;">No alarms configured. Tap '+' to create your first study alarm.</p>
+            </div>
+          `;
+          return;
+        }
+
+        appState.alarms.forEach(al => {
+          const item = document.createElement('div');
+          item.className = 'alarm-list-item' + (al.active ? '' : ' inactive');
+
+          // Parse time for AM/PM or 24h
+          const [hStr, mStr] = al.time.split(':');
+          let hours = parseInt(hStr, 10);
+          let ampm = '';
+          let displayTime = al.time;
+
+          if (!appState.settings.timeFormat24) {
+            ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            displayTime = `${String(hours).padStart(2, '0')}:${mStr}`;
+          }
+
+          const daysText = al.days.join(', ');
+
+          item.innerHTML = `
+            <div class="alarm-row-top">
+              <div class="alarm-time-display">
+                <span>${displayTime}</span>
+                ${ampm ? `<span class="alarm-ampm">${ampm}</span>` : ''}
+              </div>
+              <label class="switch">
+                <input type="checkbox" class="alarm-item-toggle" data-id="${al.id}" ${al.active ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="alarm-row-details">
+              <div class="alarm-label">${escapeHtml(al.label)}</div>
+              <div class="alarm-meta">
+                <span class="chip-badge">${daysText}</span>
+                ${al.walkToDismiss ? `<span class="chip-badge lime">🏃 ${al.stepTarget} Steps</span>` : '<span class="chip-badge">Standard</span>'}
+              </div>
+            </div>
+
+            <div class="alarm-actions-strip">
+              <button class="alarm-test-link test-this-alarm-btn" data-id="${al.id}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Test Ring
+              </button>
+              <div class="alarm-icon-actions">
+                <button class="small-icon-btn edit-alarm-btn" data-id="${al.id}" title="Edit Alarm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </button>
+                <button class="small-icon-btn delete delete-alarm-btn" data-id="${al.id}" title="Delete Alarm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+              </div>
+            </div>
+          `;
+
+          // Event Listeners for alarm items
+          const toggle = item.querySelector('.alarm-item-toggle');
+          toggle.addEventListener('change', () => {
+            al.active = toggle.checked;
+            item.classList.toggle('inactive', !al.active);
+            saveAppState();
+            renderHomeDashboard();
+          });
+
+          item.querySelector('.test-this-alarm-btn').addEventListener('click', () => {
+            triggerRingingAlarm(al);
+          });
+
+          item.querySelector('.edit-alarm-btn').addEventListener('click', () => {
+            openEditAlarmModal(al.id);
+          });
+
+          item.querySelector('.delete-alarm-btn').addEventListener('click', () => {
+            if (confirm(`Delete "${al.label}"?`)) {
+              appState.alarms = appState.alarms.filter(a => a.id !== al.id);
+              saveAppState();
+              renderAlarmsList();
+              renderHomeDashboard();
+            }
+          });
+
+          alarmsListContainer.appendChild(item);
+        });
+      }
+
+      function escapeHtml(str) {
+        return str.replace(/[&<>'"]/g, tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag));
+      }
+
+      /* -----------------------------------------------------------------------
+         7. RINGING ALARM & STEP CHALLENGE ENGINE
+         Walk to dismiss with accelerometer step detector + desktop buttons
+         ----------------------------------------------------------------------- */
+      const ringingScreenOverlay = document.getElementById('ringingScreenOverlay');
+      const ringingTimeDisplay = document.getElementById('ringingTimeDisplay');
+      const ringingAlarmLabel = document.getElementById('ringingAlarmLabel');
+      const ringingChallengeBox = document.getElementById('ringingChallengeBox');
+      const ringingNormalNotice = document.getElementById('ringingNormalNotice');
+      const ringingCurrentSteps = document.getElementById('ringingCurrentSteps');
+      const ringingStepsGoalSub = document.getElementById('ringingStepsGoalSub');
+      const ringingStepRingFill = document.getElementById('ringingStepRingFill');
+      const ringingInstructionNotice = document.getElementById('ringingInstructionNotice');
+      const btnDismissAlarm = document.getElementById('btnDismissAlarm');
+      const btnDismissAlarmLabel = document.getElementById('btnDismissAlarmLabel');
+
+      const ringState = {
+        activeAlarm: null,
+        stepsTaken: 0,
+        targetSteps: 0,
+        isUnlocked: false,
+        lastStepTimestamp: 0
+      };
+
+      const STEP_RING_CIRCUMFERENCE = 2 * Math.PI * 70; // r=70 -> 439.8
+
+      function triggerRingingAlarm(alarmObj) {
+        sounds.initContext();
+        ringState.activeAlarm = alarmObj || appState.alarms[0] || {
+          time: '07:00',
+          label: 'Study Wakeup Call',
+          walkToDismiss: true,
+          stepTarget: 30,
+          tone: 'pulse'
+        };
+
+        ringState.stepsTaken = 0;
+        ringState.targetSteps = ringState.activeAlarm.walkToDismiss ? (ringState.activeAlarm.stepTarget || 30) : 0;
+        ringState.isUnlocked = !ringState.activeAlarm.walkToDismiss;
+
+        // Populate Ringing UI
+        ringingTimeDisplay.textContent = formatAlarmTime(ringState.activeAlarm.time);
+        ringingAlarmLabel.textContent = ringState.activeAlarm.label;
+
+        if (ringState.activeAlarm.walkToDismiss) {
+          ringingChallengeBox.style.display = 'block';
+          ringingNormalNotice.style.display = 'none';
+          ringingStepsGoalSub.textContent = `of ${ringState.targetSteps} Steps`;
+          updateStepProgressUI();
+        } else {
+          ringingChallengeBox.style.display = 'none';
+          ringingNormalNotice.style.display = 'block';
+          unlockAlarmDismiss();
+        }
+
+        ringingScreenOverlay.classList.add('active');
+        sounds.startAlarmSiren(ringState.activeAlarm.tone || 'pulse');
+      }
+
+      function formatAlarmTime(timeStr) {
+        if (!timeStr) return '07:00 AM';
+        const [hStr, mStr] = timeStr.split(':');
+        let hours = parseInt(hStr, 10);
+        if (appState.settings.timeFormat24) return timeStr;
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        return `${String(hours).padStart(2, '0')}:${mStr} ${ampm}`;
+      }
+
+      function addStep(count = 1) {
+        if (ringState.isUnlocked || !ringState.activeAlarm || !ringState.activeAlarm.walkToDismiss) return;
+
+        ringState.stepsTaken = Math.min(ringState.targetSteps, ringState.stepsTaken + count);
+        sounds.playStepClick();
+        updateStepProgressUI();
+
+        if (ringState.stepsTaken >= ringState.targetSteps) {
+          unlockAlarmDismiss();
+        }
+      }
+
+      function updateStepProgressUI() {
+        ringingCurrentSteps.textContent = ringState.stepsTaken;
+        const fraction = ringState.targetSteps > 0 ? (ringState.stepsTaken / ringState.targetSteps) : 1;
+        const offset = STEP_RING_CIRCUMFERENCE * (1 - fraction);
+        ringingStepRingFill.style.strokeDashoffset = offset;
+
+        if (!ringState.isUnlocked) {
+          const remaining = ringState.targetSteps - ringState.stepsTaken;
+          btnDismissAlarmLabel.textContent = `Walk ${remaining} more ${remaining === 1 ? 'step' : 'steps'} to unlock`;
+          btnDismissAlarm.className = 'btn-dismiss-alarm disabled';
+          btnDismissAlarm.disabled = true;
+        }
+      }
+
+      function unlockAlarmDismiss() {
+        ringState.isUnlocked = true;
+        btnDismissAlarm.className = 'btn-dismiss-alarm unlocked';
+        btnDismissAlarm.disabled = false;
+        btnDismissAlarmLabel.textContent = 'Dismiss Alarm';
+        ringingInstructionNotice.textContent = '🎉 Goal reached! You may now silence the alarm.';
+        sounds.playTone(880, 'sine', 0.2, 0.3);
+      }
+
+      btnDismissAlarm.addEventListener('click', () => {
+        if (!ringState.isUnlocked) return;
+        sounds.stopAlarmSiren();
+        sounds.playTone(440, 'triangle', 0.15, 0.2);
+        ringingScreenOverlay.classList.remove('active');
+      });
+
+      // Simulation Step Controls
+      document.getElementById('btnSimulateOneStep').addEventListener('click', () => addStep(1));
+      document.getElementById('btnSimulateFiveSteps').addEventListener('click', () => addStep(5));
+      document.getElementById('homeTestAlarmBtn').addEventListener('click', () => {
+        const next = getNextActiveAlarm();
+        triggerRingingAlarm(next);
+      });
+      document.getElementById('protoQuickRingBtn').addEventListener('click', () => {
+        triggerRingingAlarm(appState.alarms[0]);
+      });
+      document.getElementById('alarmDirectTestBtn').addEventListener('click', () => {
+        triggerRingingAlarm(appState.alarms[0]);
+      });
+
+      // Real DeviceMotion Accelerometer Step Detector
+      function initStepMotionDetector() {
+        let lastMag = 9.8;
+        const STEP_THRESHOLD = 12.8; // Peak threshold
+        const STEP_COOLDOWN = 360;  // ms between human steps to prevent double-counting
+
+        window.addEventListener('devicemotion', (e) => {
+          if (!ringingScreenOverlay.classList.contains('active')) return;
+          if (!ringState.activeAlarm || !ringState.activeAlarm.walkToDismiss || ringState.isUnlocked) return;
+
+          const acc = e.accelerationIncludingGravity;
+          if (!acc || acc.x === null) return;
+
+          const mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+          const delta = mag - lastMag;
+          lastMag = mag;
+
+          const now = Date.now();
+          if (mag > STEP_THRESHOLD && delta > 2.0 && (now - ringState.lastStepTimestamp > STEP_COOLDOWN)) {
+            ringState.lastStepTimestamp = now;
+            addStep(1);
+          }
+        });
+      }
+
+      /* -----------------------------------------------------------------------
+         8. HOME DASHBOARD RENDERING
+         ----------------------------------------------------------------------- */
+      function getNextActiveAlarm() {
+        return appState.alarms.find(a => a.active) || appState.alarms[0];
+      }
+
+      function renderHomeDashboard() {
+        // Compute today's total study minutes
+        const todayMins = appState.sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
+        const goalMins = appState.settings.dailyGoalMinutes || 180;
+        const percent = Math.min(100, Math.round((todayMins / goalMins) * 100));
+
+        // Format focus time
+        const hrs = Math.floor(todayMins / 60);
+        const mins = todayMins % 60;
+        const timeFormatted = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+        document.getElementById('homeMetricTime').textContent = timeFormatted;
+        document.getElementById('homeMetricSessions').textContent = `${appState.sessions.length} done`;
+        document.getElementById('homeGaugePercent').textContent = `${percent}%`;
+        document.getElementById('homeGoalChip').textContent = `${Math.round(goalMins / 60)}h Goal`;
+
+        // Update Semicircular Gauge (dasharray 283 for 180deg arc)
+        const GAUGE_CIRCUMFERENCE = 283;
+        const offset = GAUGE_CIRCUMFERENCE * (1 - (percent / 100));
+        document.getElementById('homeGaugeFill').style.strokeDashoffset = offset;
+
+        // Next Alarm Card
+        const next = getNextActiveAlarm();
+        if (next) {
+          const [hStr, mStr] = next.time.split(':');
+          let hours = parseInt(hStr, 10);
+          let ampm = '';
+          if (!appState.settings.timeFormat24) {
+            ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            document.getElementById('nextAlarmTime').textContent = `${String(hours).padStart(2, '0')}:${mStr}`;
+            document.getElementById('nextAlarmAmPm').textContent = ampm;
+          } else {
+            document.getElementById('nextAlarmTime').textContent = next.time;
+            document.getElementById('nextAlarmAmPm').textContent = '';
+          }
+
+          document.getElementById('nextAlarmLabel').textContent = next.label;
+          document.getElementById('nextAlarmDays').textContent = next.days.join(', ');
+          document.getElementById('nextAlarmChallengeBadge').textContent = next.walkToDismiss ? `🏃 ${next.stepTarget} Steps` : 'Standard';
+          document.getElementById('nextAlarmToggle').checked = next.active;
+        }
+
+        document.getElementById('alarmActiveBadge').style.display = appState.alarms.some(a => a.active) ? 'block' : 'none';
+      }
+
+      // Home Screen Nav Shortcuts
+      document.getElementById('homeHeroStartBtn').addEventListener('click', () => {
+        sounds.initContext();
+        setTimerDuration(25);
+        navigateTo('screenTimer');
+      });
+      document.getElementById('homeViewAlarmsLink').addEventListener('click', () => {
+        sounds.initContext();
+        navigateTo('screenAlarms');
+      });
+      document.getElementById('headerAlarmBellBtn').addEventListener('click', () => {
+        sounds.initContext();
+        navigateTo('screenAlarms');
+      });
+      document.getElementById('nextAlarmToggle').addEventListener('change', (e) => {
+        const next = getNextActiveAlarm();
+        if (next) {
+          next.active = e.target.checked;
+          saveAppState();
+          renderAlarmsList();
+        }
+      });
+
+      /* -----------------------------------------------------------------------
+         9. PROGRESS & ANALYTICS RENDERING
+         ----------------------------------------------------------------------- */
+      function renderProgressScreen() {
+        const todayMins = appState.sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
+        const goalMins = appState.settings.dailyGoalMinutes || 180;
+        const percent = Math.min(100, Math.round((todayMins / goalMins) * 100));
+
+        document.getElementById('progressMinutesDisplay').textContent = todayMins;
+        document.getElementById('progressGoalSub').textContent = `Goal: ${goalMins} min (${percent}%)`;
+        document.getElementById('statSessionsDone').textContent = appState.sessions.length;
+
+        // Longest session
+        const maxSession = appState.sessions.reduce((max, s) => Math.max(max, s.minutes || 0), 0);
+        document.getElementById('statLongestBlock').textContent = `${maxSession}m`;
+
+        // Update Circular Ring Fill
+        const HERO_RING_CIRCUMFERENCE = 2 * Math.PI * 92; // 578
+        const offset = HERO_RING_CIRCUMFERENCE * (1 - (percent / 100));
+        document.getElementById('analyticsRingFill').style.strokeDashoffset = offset;
+
+        // Render 7-day Activity Bars (Mon - Sun)
+        const weekBarsWrap = document.getElementById('chartWeekBars');
+        weekBarsWrap.innerHTML = '';
+        const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const sampleHours = [2.5, 3.2, 1.8, 4.0, 3.5, 2.2, (todayMins / 60).toFixed(1)];
+        const maxVal = Math.max(...sampleHours, 4.5);
+
+        dayLabels.forEach((label, idx) => {
+          const val = sampleHours[idx];
+          const heightPct = Math.max(12, Math.round((val / maxVal) * 100));
+          const isToday = (idx === 6); // Set Sunday/today as active
+
+          const col = document.createElement('div');
+          col.className = 'chart-bar-col' + (isToday ? ' today' : '');
+          col.innerHTML = `
+            <div class="bar-pillar" style="height:${heightPct}%;"></div>
+            <span class="bar-label">${label}</span>
+          `;
+          weekBarsWrap.appendChild(col);
+        });
+
+        // Render Recent Sessions
+        const recentWrap = document.getElementById('recentSessionsList');
+        recentWrap.innerHTML = '';
+
+        if (!appState.sessions.length) {
+          recentWrap.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center; padding:12px;">No sessions logged yet.</p>';
+          return;
+        }
+
+        appState.sessions.slice(0, 6).forEach(s => {
+          const card = document.createElement('div');
+          card.className = 'recent-session-card';
+          card.innerHTML = `
+            <div class="session-info-left">
+              <div class="session-tag-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
+              <div>
+                <div class="session-title">${escapeHtml(s.subject)}</div>
+                <div class="session-sub">${s.minutes} min • ${s.date}</div>
+              </div>
+            </div>
+            <div class="check-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+          `;
+          recentWrap.appendChild(card);
+        });
+      }
+
+      // Filter Tabs for Progress (Day / Week / Month)
+      document.querySelectorAll('.segmented-control .segment-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.segmented-control .segment-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          // Smooth mock toggle
+          sounds.playTone(300, 'sine', 0.05, 0.1);
+        });
+      });
+
+      document.getElementById('clearHistoryLink').addEventListener('click', () => {
+        if (confirm('Clear study session history?')) {
+          appState.sessions = [];
+          saveAppState();
+          renderProgressScreen();
+          renderHomeDashboard();
+        }
+      });
+
+      /* -----------------------------------------------------------------------
+         10. SETTINGS & APP PREFERENCES
+         ----------------------------------------------------------------------- */
+      const settingGoalSelect = document.getElementById('settingGoalSelect');
+      const settingSoundToggle = document.getElementById('settingSoundToggle');
+      const setting24hToggle = document.getElementById('setting24hToggle');
+      const settingVibrationToggle = document.getElementById('settingVibrationToggle');
+      const btnResetAllData = document.getElementById('btnResetAllData');
+
+      function initSettingsUI() {
+        settingGoalSelect.value = appState.settings.dailyGoalMinutes || 180;
+        settingSoundToggle.checked = appState.settings.soundEnabled;
+        setting24hToggle.checked = appState.settings.timeFormat24;
+        settingVibrationToggle.checked = appState.settings.vibrationEnabled;
+
+        settingGoalSelect.addEventListener('change', () => {
+          appState.settings.dailyGoalMinutes = parseInt(settingGoalSelect.value, 10);
+          saveAppState();
+          renderHomeDashboard();
+          renderProgressScreen();
+        });
+
+        settingSoundToggle.addEventListener('change', () => {
+          appState.settings.soundEnabled = settingSoundToggle.checked;
+          saveAppState();
+        });
+
+        setting24hToggle.addEventListener('change', () => {
+          appState.settings.timeFormat24 = setting24hToggle.checked;
+          saveAppState();
+          renderHomeDashboard();
+          renderAlarmsList();
+        });
+
+        settingVibrationToggle.addEventListener('change', () => {
+          appState.settings.vibrationEnabled = settingVibrationToggle.checked;
+          saveAppState();
+        });
+
+        btnResetAllData.addEventListener('click', () => {
+          if (confirm('Reset prototype state to original factory defaults?')) {
+            localStorage.removeItem(STORAGE_KEY);
+            appState = JSON.parse(JSON.stringify(defaultState));
+            saveAppState();
+            initSettingsUI();
+            renderHomeDashboard();
+            renderAlarmsList();
+            renderProgressScreen();
+            alert('Prototype data reset to initial seed state.');
+          }
+        });
+      }
+
+      /* -----------------------------------------------------------------------
+         11. CELEBRATION CONFETTI PARTICLE SYSTEM
+         ----------------------------------------------------------------------- */
+      function triggerConfetti() {
+        const canvas = document.getElementById('celebration-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.parentElement.offsetWidth * dpr;
+        canvas.height = canvas.parentElement.offsetHeight * dpr;
+
+        const particles = [];
+        const colors = ['#D4FF00', '#FFFFFF', '#A6E22E', '#66D9EF', '#FD971F'];
+
+        for (let i = 0; i < 60; i++) {
+          particles.push({
+            x: (canvas.width / 2) + (Math.random() - 0.5) * 60,
+            y: (canvas.height / 2) + (Math.random() - 0.5) * 60,
+            vx: (Math.random() - 0.5) * 14 * dpr,
+            vy: (Math.random() - 1.2) * 14 * dpr,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: (Math.random() * 5 + 4) * dpr,
+            alpha: 1,
+            rotation: Math.random() * 360,
+            rotSpeed: (Math.random() - 0.5) * 10
+          });
+        }
+
+        let frame = 0;
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          let alive = false;
+
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.35 * dpr; // Gravity
+            p.alpha -= 0.012;
+            p.rotation += p.rotSpeed;
+
+            if (p.alpha > 0) {
+              alive = true;
+              ctx.save();
+              ctx.globalAlpha = Math.max(0, p.alpha);
+              ctx.translate(p.x, p.y);
+              ctx.rotate((p.rotation * Math.PI) / 180);
+              ctx.fillStyle = p.color;
+              ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+              ctx.restore();
+            }
+          });
+
+          if (alive && frame < 120) {
+            frame++;
+            requestAnimationFrame(animate);
+          } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+        requestAnimationFrame(animate);
+      }
+
+      /* -----------------------------------------------------------------------
+         12. LIVE STATUS BAR CLOCK
+         ----------------------------------------------------------------------- */
+      function startLiveClock() {
+        const liveClockDisplay = document.getElementById('liveClockDisplay');
+        const homeDateDisplay = document.getElementById('homeDateDisplay');
+        const update = () => {
+          const now = new Date();
+          let hours = now.getHours();
+          const mins = String(now.getMinutes()).padStart(2, '0');
+          if (!appState.settings.timeFormat24) {
+            hours = hours % 12 || 12;
+          }
+          liveClockDisplay.textContent = `${hours}:${mins}`;
+
+          if (homeDateDisplay) {
+            const opts = { weekday: 'long', month: 'short', day: 'numeric' };
+            homeDateDisplay.textContent = 'Ready to focus? ' + now.toLocaleDateString('en-US', opts);
+          }
+        };
+        update();
+        setInterval(update, 1000);
+      }
+
+      /* -----------------------------------------------------------------------
+         INITIALIZE APP ON DOM READY
+         ----------------------------------------------------------------------- */
+      window.addEventListener('DOMContentLoaded', () => {
+        startLiveClock();
+        initSettingsUI();
+        initOrientationSensor();
+        initStepMotionDetector();
+        setTimerDuration(appState.timerPresetMins || 25);
+        renderHomeDashboard();
+        renderAlarmsList();
+        renderProgressScreen();
+      });
+
+    })();
+  </script>
+</body>
+</html>
