@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -27,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,7 +37,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.zenith.study.ZenithApplication
 import com.zenith.study.domain.model.Alarm
+import com.zenith.study.service.AlarmRingingService
 import com.zenith.study.ui.components.AlarmEditSheet
+import com.zenith.study.ui.components.PostDismissTodoSheet
 import com.zenith.study.ui.components.ZenithBottomNav
 import com.zenith.study.ui.components.ZenithTab
 import com.zenith.study.ui.screens.AlarmsScreen
@@ -50,6 +54,27 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private var currentActiveTab = ZenithTab.HOME
+    private var isSheetOpenState = false
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        val settings = viewModel.userSettingsState.value
+        val isAlarmActive = AlarmRingingService.activeRingingAlarmFlow.value != null
+
+        if (settings.volumeButtonsEnabled && currentActiveTab == ZenithTab.TIMER && !isSheetOpenState && !isAlarmActive && event?.repeatCount == 0) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_VOLUME_UP -> {
+                    viewModel.startOrResumeTimer()
+                    return true
+                }
+                KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                    viewModel.pauseTimer()
+                    return true
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,12 +88,31 @@ class MainActivity : ComponentActivity() {
                 val userSettings by viewModel.userSettingsState.collectAsState()
                 val timerStatus by viewModel.timerStatusState.collectAsState()
                 val statisticsReport by viewModel.statisticsReportState.collectAsState()
+                val todayTodos by viewModel.todayTodosState.collectAsState()
 
                 var currentTab by remember { mutableStateOf(ZenithTab.HOME) }
+                currentActiveTab = currentTab
+
                 var editingAlarm by remember { mutableStateOf<Alarm?>(null) }
                 var isEditSheetOpen by remember { mutableStateOf(false) }
 
+                var isTodoSheetOpen by remember {
+                    mutableStateOf(intent.getBooleanExtra(EXTRA_SHOW_POST_DISMISS_TODO, false))
+                }
+                var todoAlarmLabel by remember {
+                    mutableStateOf(intent.getStringExtra(EXTRA_TODO_ALARM_LABEL) ?: "Morning Alarm")
+                }
+                var todoStepCount by remember {
+                    mutableIntStateOf(intent.getIntExtra(EXTRA_TODO_STEP_COUNT, 30))
+                }
+                var todoIsTest by remember {
+                    mutableStateOf(intent.getBooleanExtra(EXTRA_TODO_IS_TEST, false))
+                }
+
+                isSheetOpenState = isEditSheetOpen || isTodoSheetOpen
+
                 val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                val todoSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
                 val snackbarHostState = remember { SnackbarHostState() }
                 val scope = rememberCoroutineScope()
 
@@ -115,10 +159,10 @@ class MainActivity : ComponentActivity() {
                             duration = SnackbarDuration.Long
                         )
                         if (result == SnackbarResult.ActionPerformed) {
-                            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            val reqIntent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
                                 data = Uri.parse("package:$packageName")
                             }
-                            startActivity(intent)
+                            startActivity(reqIntent)
                         }
                     }
                 }
@@ -141,12 +185,19 @@ class MainActivity : ComponentActivity() {
                     ) {
                         when (currentTab) {
                             ZenithTab.HOME -> HomeScreen(
+                                userName = userSettings.userName,
                                 nextAlarm = nextAlarm,
                                 statisticsReport = statisticsReport,
                                 dailyGoalMinutes = userSettings.dailyGoalMinutes,
+                                selectedDurationMinutes = userSettings.selectedDurationMinutes,
+                                timerMode = userSettings.timerMode,
                                 is24Hour = userSettings.is24HourFormat,
+                                todayTodos = todayTodos,
+                                onToggleTodo = { viewModel.toggleTodo(it) },
+                                onAddTodo = { viewModel.addTodo(it) },
+                                onDeleteTodo = { viewModel.deleteTodo(it) },
                                 onStartSessionClick = {
-                                    viewModel.setTimerDuration(25)
+                                    viewModel.setTimerDuration(userSettings.selectedDurationMinutes)
                                     currentTab = ZenithTab.TIMER
                                 },
                                 onNextAlarmToggle = { alarm, enabled ->
@@ -163,7 +214,10 @@ class MainActivity : ComponentActivity() {
                             )
                             ZenithTab.TIMER -> TimerScreen(
                                 timerStatus = timerStatus,
+                                timerMode = userSettings.timerMode,
+                                selectedMinutes = userSettings.selectedDurationMinutes,
                                 onSetDuration = { mins -> viewModel.setTimerDuration(mins) },
+                                onSetMode = { mode -> viewModel.setTimerMode(mode) },
                                 onManualToggle = { viewModel.toggleManualTimer() },
                                 onReset = { viewModel.resetTimer() },
                                 onEndSession = { viewModel.endSessionEarly() }
@@ -191,11 +245,12 @@ class MainActivity : ComponentActivity() {
                             )
                             ZenithTab.SETTINGS -> SettingsScreen(
                                 userSettings = userSettings,
+                                onUpdateUserName = { viewModel.updateUserName(it) },
                                 onUpdateDailyGoal = { viewModel.updateDailyGoal(it) },
                                 onToggleSound = { viewModel.toggleSound(it) },
                                 onToggle24Hour = { viewModel.toggle24Hour(it) },
                                 onToggleVibration = { viewModel.toggleVibration(it) },
-                                onToggleAutoFlip = { viewModel.toggleAutoFlip(it) },
+                                onToggleVolumeButtons = { viewModel.toggleVolumeButtons(it) },
                                 onResetAllData = { viewModel.resetAllData() }
                             )
                         }
@@ -213,10 +268,37 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+
+                        // Post-Dismiss To-Do Sheet
+                        if (isTodoSheetOpen) {
+                            PostDismissTodoSheet(
+                                sheetState = todoSheetState,
+                                todos = todayTodos,
+                                alarmLabel = todoAlarmLabel,
+                                stepCount = todoStepCount,
+                                isTestRing = todoIsTest,
+                                onToggleTodo = { viewModel.toggleTodo(it) },
+                                onAddTodo = { viewModel.addTodo(it) },
+                                onDeleteTodo = { viewModel.deleteTodo(it) },
+                                onDismiss = { isTodoSheetOpen = false }
+                            )
+                        }
                     }
                 }
             }
         }
     }
-}
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    companion object {
+        const val EXTRA_SHOW_POST_DISMISS_TODO = "extra_show_post_dismiss_todo"
+        const val EXTRA_TODO_ALARM_ID = "extra_todo_alarm_id"
+        const val EXTRA_TODO_ALARM_LABEL = "extra_todo_alarm_label"
+        const val EXTRA_TODO_STEP_COUNT = "extra_todo_step_count"
+        const val EXTRA_TODO_IS_TEST = "extra_todo_is_test"
+    }
+}

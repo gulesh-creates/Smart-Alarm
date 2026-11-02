@@ -17,7 +17,7 @@
     <!-- Actions & States -->
     <string name="start_session">Start Session</string>
     <string name="deep_work_sprint">DEEP WORK SPRINT</string>
-    <string name="flip_to_start_desc">Place phone face down to start</string>
+    <string name="smart_timer_desc">Turn display off to start or resume countdown</string>
     <string name="dismiss_alarm">Dismiss Alarm</string>
     <string name="walk_to_dismiss">Walk to Dismiss</string>
     <string name="emergency_dismiss">Emergency Dismiss</string>

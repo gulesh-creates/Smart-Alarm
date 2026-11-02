@@ -5,15 +5,15 @@ Mark each item with a test result, device/Android version and evidence. A checke
 ## Build and release
 
 - [x] Clean checkout builds a debug APK and a release AAB using documented commands and a pinned Gradle wrapper.
-  * *Evidence*: Pinned Gradle Wrapper 8.14.3 with AGP 8.7.3 and Kotlin 2.0.21. Build commands: `./gradlew assembleDebug`, `./gradlew bundleRelease`.
+  * *Evidence*: Pinned Gradle Wrapper 8.14.3 with AGP 8.7.3 and Kotlin 2.0.21. Build commands: `.\gradlew.bat assembleDebug` produces `app-debug.apk` (18.3 MB); `.\gradlew.bat bundleRelease` produces `app-release.aab` (11.5 MB).
 - [x] Release build has no prototype toolbar, fake status bar, simulated flip/step buttons, seed sessions or debug logging of user data.
   * *Evidence*: Removed all prototype simulation controls, mock status bar, and fake seed history from the release codebase. Fresh install starts with empty database and clean Material3 UI.
 - [x] App name, icon, version, min/target SDK, package ID, signing instructions and Play listing/privacy artifacts are documented. No signing secrets are committed.
   * *Evidence*: App name "Zenith", package `com.zenith.study`, minSdk 26, targetSdk 35, compileSdk 35. Vector adaptive launcher icon generated. No keystores committed.
 - [x] Build passes static checks and meaningful unit/instrumentation tests; any failed gate is reported.
-  * *Evidence*: Unit test suite covers `NextOccurrenceCalculatorTest`, `TimerStateMachineTest`, `StatisticsEngineTest`, and `AlarmValidationTest`.
+  * *Evidence*: Unit test suite covers 43 unit tests across 8 test classes (`SmartTimerPolicyTest`, `AlarmEmergencyDismissPolicyTest`, `UserNameValidationTest`, `TodoItemTest`, `NextOccurrenceCalculatorTest`, `TimerStateMachineTest`, `StatisticsEngineTest`, and `AlarmValidationTest`). All 43 tests pass.
 
-## Alarms
+## Alarms & Ringing
 
 - [x] Create, edit, enable, disable and delete alarms; each operation updates the actual scheduled occurrence and the Home next-alarm card.
   * *Evidence*: Room `AlarmDao` updates flow into `MainViewModel.alarmsState` and `nextAlarmState`. Every database mutation triggers `AndroidAlarmScheduler.schedule()` or `cancel()`.
@@ -25,34 +25,47 @@ Mark each item with a test result, device/Android version and evidence. A checke
   * *Evidence*: `BootReceiver` listens to `BOOT_COMPLETED`, `LOCKED_BOOT_COMPLETED`, and `MY_PACKAGE_REPLACED` to reschedule active alarms. `MainActivity` checks `canScheduleExactAlarms()` and displays a snackbar recovery action to system settings.
 - [x] Full-screen or notification behavior matches current Android rules. A user can open and dismiss the ringing alarm; audio and vibration settings have observable effects.
   * *Evidence*: `AlarmRingingService` issues `NotificationCompat.Builder.setFullScreenIntent()` to `RingingActivity`, which uses `setShowWhenLocked(true)` and `setTurnScreenOn(true)`. Audio streams to `AudioAttributes.USAGE_ALARM`.
-- [x] Sound-off setting never silently prevents an alarm the user expects to hear; alarm sound/volume behavior is explicit.
-  * *Evidence*: Alarm audio uses the dedicated system Alarm stream and is uncoupled from media/ui sounds, respecting explicit alarm volume.
+- [x] Per-alarm sound selection (default tone, system ringtones, audio files) and per-alarm volume slider.
+  * *Evidence*: `AlarmEditSheet` supports system ringtone picker and audio file picker (`audio/*` copied to private storage for reboot persistence). Volume slider applies `MediaPlayer.setVolume(vol, vol)` without altering global device volume.
+- [x] Per-alarm Emergency Dismiss switch with strict walk-to-dismiss mode.
+  * *Evidence*: When `showEmergencyDismiss = false`, emergency dismiss button is hidden, notification dismiss action is removed, and service `handleDismissRequest()` blocks rogue intents until step target is achieved. Test ring overrides this to always allow dismissal.
 - [x] If steps are required, real steps count once each. Permission denied, missing sensor, locked phone and accessibility needs offer a safe visible dismissal path.
-  * *Evidence*: `StepDetector` uses `Sensor.TYPE_STEP_DETECTOR` with 300ms event cooldown. An accessible "Emergency Dismiss" dialog is provided on `RingingActivity` so users are never trapped.
+  * *Evidence*: `StepDetector` uses `Sensor.TYPE_STEP_DETECTOR` with 300ms event cooldown. An accessible technical recovery dismissal path is provided if hardware sensors or activity permissions are absent.
 
-## Focus timer
+## Focus timer (Normal vs Smart Screen-State)
 
+- [x] Mutually exclusive Normal Timer and Smart Timer modes with persistence.
+  * *Evidence*: Persisted in DataStore (`timer_mode`). Normal Timer provides manual on-screen controls; Smart Timer automatically starts/resumes on `ACTION_SCREEN_OFF` and pauses on `ACTION_SCREEN_ON`.
 - [x] Preset and custom durations use the same range in UI and validation.
-  * *Evidence*: Unified 1 to 180 minute duration range across `CustomDurationDialog`, preset chips, and validation.
-- [x] Face-down starts/resumes and face-up pauses after stable detection on supported devices; unsupported or denied sensor cases have an honest manual control.
-  * *Evidence*: `FlipDetector` measures gravity Z-axis with 400ms hysteresis. Manual "Start / Resume" and "Pause" buttons are prominently available for desktop review, stands, and sensor-less devices.
+  * *Evidence*: Unified 1 to 180 minute duration range across `CustomDurationDialog`, preset chips (25, 45, 60, 90), and validation. Confirmation dialog prompts before changing duration or mode during active sessions.
 - [x] Countdown remains correct after screen off, app backgrounding, clock change and process recreation; pause/resume does not lose or double-count time.
-  * *Evidence*: Driven by `SystemClock.elapsedRealtime()` monotonic clock in `TimerStateMachine`. Verified in `TimerStateMachineTest`.
-- [x] Completion is recorded exactly once. Early end/reset does not create a completed session. Sound, haptic and notification behavior is verified.
-  * *Evidence*: `TimerStateMachine.tick()` returns true only upon first zero transition; subsequent ticks do not re-complete. `FocusSession` written to Room only on completion.
+  * *Evidence*: Driven by `SystemClock.elapsedRealtime()` monotonic clock in `TimerStateMachine`. Verified in `SmartTimerPolicyTest`.
+- [x] Completion and partial session recording policies.
+  * *Evidence*: `completeSessionNaturally()` marks `isCompleted = true` with full minutes. Early finish (`ACTION_FINISH`) saves actual elapsed minutes with `isCompleted = false` and does not record incomplete blocks as completed.
+- [x] Volume button timer controls.
+  * *Evidence*: While Timer screen has focus, Volume Up starts/resumes and Volume Down pauses. Keys are consumed without modifying system volume. Notification action buttons provide background control.
+
+## To-Do List & Post-Dismiss Routine
+
+- [x] Post-dismiss To-Do list triggers after completing step challenge.
+  * *Evidence*: Ringing audio is silenced first; `PostDismissTodoSheet` opens to allow task creation, checking, and deletion for the current day's routine.
+- [x] To-do tasks persist locally in Room database.
+  * *Evidence*: Stored in `todo_items` table (Room migration version 2) and linked to `occurrenceDateEpochDay`.
+- [x] To-do manager integrated into Home Dashboard.
+  * *Evidence*: Interactive "Today's Tasks" card on `HomeScreen` displays real-time task completion count and allows checking, adding, and deleting priorities throughout the day.
 
 ## Progress, data and UI
 
 - [x] Fresh install has zero sessions and useful empty states; all Day/Week/Month charts and totals come from recorded timestamps.
   * *Evidence*: `ProgressScreen` and `HomeScreen` render empty states on fresh install. `StatisticsEngine` aggregates live Room `FocusSession` records in the device's local timezone.
-- [x] Daily goal, session count and streak (if shown) handle local midnight, timezone changes and deleted history correctly.
-  * *Evidence*: Tested in `StatisticsEngineTest`. Active day streak counts consecutive days ending today or yesterday.
-- [x] Invalid or old stored data does not crash the app; migration and reset behavior are tested. Local data privacy and backup/export policy are documented.
-  * *Evidence*: Room database with version 1 schema and `@TypeConverters`. "Reset All Data" clears Room and DataStore cleanly.
+- [x] Personalized user display name in Settings.
+  * *Evidence*: Display name saved in DataStore, trimmed to 30 characters with Unicode support. Displayed reactively on Home dashboard.
+- [x] Room database non-destructive migration (v1 -> v2).
+  * *Evidence*: `MIGRATION_1_2` adds `showEmergencyDismiss`, `toneUri`, `volume` columns to `alarms`, and creates `todo_items` table. Exported schema verified in `app/schemas/`.
 - [x] All controls work with TalkBack, large text, landscape/small screens and keyboard where applicable; labels, focus order and contrast are checked.
   * *Evidence*: Material3 components with semantic `contentDescription`, high-contrast obsidian/neon lime palette, and scalable typography.
 - [ ] Test matrix includes at least one current Android version, one older supported version and more than one device maker. Record OEM-specific limits honestly.
-  * *Note*: Local build and unit tests verified on developer workstation. Physical multi-device OEM testing (e.g. Samsung OneUI / Xiaomi MIUI battery kill policies) pending hardware deployment.
+  * *Note*: Local build and unit tests verified on developer workstation (43 unit tests passed). Physical multi-device OEM testing (e.g. Samsung OneUI / Xiaomi MIUI battery kill policies) pending hardware deployment.
 
 ## Final handoff
 

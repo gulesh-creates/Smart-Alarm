@@ -40,7 +40,7 @@
 
         <property
             android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-            android:value="Focus timer countdown and flip-down orientation sensor" />
+            android:value="Focus timer countdown and screen-state interactive study tracker" />
 
         <!-- Main User Interface Activity -->
         <activity

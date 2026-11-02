@@ -205,6 +205,36 @@ private fun AlarmCard(
                                     color = NeonLime
                                 )
                             }
+                            if (!alarm.showEmergencyDismiss) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(9999.dp))
+                                        .background(CardSubtle)
+                                        .padding(horizontal = 9.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        text = "Strict (No Bypass)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+                        }
+                        if (alarm.tone != "Default" && alarm.tone != "System default") {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(9999.dp))
+                                    .background(CardSubtle)
+                                    .padding(horizontal = 9.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "🎵 ${alarm.tone.take(12)}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextSecondary
+                                )
+                            }
                         }
                     }
                 }

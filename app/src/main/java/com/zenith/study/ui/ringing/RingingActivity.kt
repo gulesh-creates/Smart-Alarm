@@ -26,11 +26,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,24 +50,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zenith.study.alarm.AndroidAlarmScheduler
 import com.zenith.study.sensor.StepDetector
 import com.zenith.study.service.AlarmRingingService
+import com.zenith.study.ui.MainActivity
 import com.zenith.study.ui.components.CircularProgressRing
-import com.zenith.study.ui.theme.BorderSubtle
 import com.zenith.study.ui.theme.CanvasBlack
 import com.zenith.study.ui.theme.CardCharcoal
 import com.zenith.study.ui.theme.CardElevated
+import com.zenith.study.ui.theme.Danger
 import com.zenith.study.ui.theme.NeonLime
 import com.zenith.study.ui.theme.NeonLimeSubtle
 import com.zenith.study.ui.theme.TextInverse
 import com.zenith.study.ui.theme.TextMuted
 import com.zenith.study.ui.theme.TextPrimary
 import com.zenith.study.ui.theme.TextSecondary
+import com.zenith.study.ui.theme.Warning
 import com.zenith.study.ui.theme.ZenithTheme
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -95,6 +97,9 @@ class RingingActivity : ComponentActivity() {
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        val passedAlarmId = intent.getLongExtra(AndroidAlarmScheduler.EXTRA_ALARM_ID, -1L)
+        val passedIsTest = intent.getBooleanExtra(AlarmRingingService.EXTRA_IS_TEST_RING, false)
+
         // Hardware step detector initialization
         stepDetector = StepDetector(
             context = this,
@@ -106,7 +111,11 @@ class RingingActivity : ComponentActivity() {
         setContent {
             ZenithTheme {
                 val activeAlarm by AlarmRingingService.activeRingingAlarmFlow.collectAsState()
+                val isTestRing by AlarmRingingService.isTestRingFlow.collectAsState()
                 val stepsTaken by AlarmRingingService.currentStepsFlow.collectAsState()
+
+                val effectiveAlarmId = activeAlarm?.id ?: passedAlarmId
+                val effectiveIsTest = isTestRing || passedIsTest
 
                 DisposableEffect(Unit) {
                     stepDetector?.startListening()
@@ -116,14 +125,47 @@ class RingingActivity : ComponentActivity() {
                 }
 
                 RingingScreen(
-                    alarmLabel = activeAlarm?.label ?: "Morning Study Alarm",
+                    alarmLabel = activeAlarm?.label ?: "Study Alarm",
                     walkToDismiss = activeAlarm?.walkToDismiss ?: false,
                     targetSteps = activeAlarm?.stepTarget ?: 0,
                     stepsTaken = stepsTaken,
                     isStepSensorAvailable = stepDetector?.isAvailable == true,
-                    onDismiss = {
-                        val dismissIntent = Intent(this, AlarmRingingService::class.java).apply {
+                    showEmergencyDismiss = activeAlarm?.showEmergencyDismiss ?: true,
+                    isTestRing = effectiveIsTest,
+                    onDismissGoalReached = {
+                        // 1. Silence audio
+                        val dismissIntent = Intent(this@RingingActivity, AlarmRingingService::class.java).apply {
                             action = AlarmRingingService.ACTION_DISMISS_ALARM
+                            putExtra(AndroidAlarmScheduler.EXTRA_ALARM_ID, effectiveAlarmId)
+                        }
+                        startService(dismissIntent)
+
+                        // 2. Launch To-Do list on MainActivity
+                        val mainIntent = Intent(this@RingingActivity, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            putExtra(MainActivity.EXTRA_SHOW_POST_DISMISS_TODO, true)
+                            putExtra(MainActivity.EXTRA_TODO_ALARM_ID, effectiveAlarmId)
+                            putExtra(MainActivity.EXTRA_TODO_ALARM_LABEL, activeAlarm?.label ?: "Study Alarm")
+                            putExtra(MainActivity.EXTRA_TODO_STEP_COUNT, stepsTaken)
+                            putExtra(MainActivity.EXTRA_TODO_IS_TEST, effectiveIsTest)
+                        }
+                        startActivity(mainIntent)
+                        finish()
+                    },
+                    onEmergencyDismiss = {
+                        val dismissIntent = Intent(this@RingingActivity, AlarmRingingService::class.java).apply {
+                            action = AlarmRingingService.ACTION_DISMISS_ALARM
+                            putExtra(AlarmRingingService.EXTRA_IS_EMERGENCY, true)
+                            putExtra(AndroidAlarmScheduler.EXTRA_ALARM_ID, effectiveAlarmId)
+                        }
+                        startService(dismissIntent)
+                        finish()
+                    },
+                    onSensorFailureDismiss = {
+                        val dismissIntent = Intent(this@RingingActivity, AlarmRingingService::class.java).apply {
+                            action = AlarmRingingService.ACTION_DISMISS_ALARM
+                            putExtra(AlarmRingingService.EXTRA_IS_SENSOR_FAILURE, true)
+                            putExtra(AndroidAlarmScheduler.EXTRA_ALARM_ID, effectiveAlarmId)
                         }
                         startService(dismissIntent)
                         finish()
@@ -141,7 +183,11 @@ fun RingingScreen(
     targetSteps: Int,
     stepsTaken: Int,
     isStepSensorAvailable: Boolean,
-    onDismiss: () -> Unit
+    showEmergencyDismiss: Boolean,
+    isTestRing: Boolean,
+    onDismissGoalReached: () -> Unit,
+    onEmergencyDismiss: () -> Unit,
+    onSensorFailureDismiss: () -> Unit
 ) {
     val currentTime = remember {
         LocalTime.now().format(DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault()))
@@ -149,6 +195,7 @@ fun RingingScreen(
 
     val isGoalReached = !walkToDismiss || (stepsTaken >= targetSteps)
     var showEmergencyDialog by remember { mutableStateOf(false) }
+    var showSensorFailureDialog by remember { mutableStateOf(false) }
 
     // Pulsing background glow animation
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -162,6 +209,7 @@ fun RingingScreen(
         label = "pulseScale"
     )
 
+    // User-configured Emergency Dismiss Dialog
     if (showEmergencyDialog) {
         AlertDialog(
             onDismissRequest = { showEmergencyDialog = false },
@@ -175,7 +223,11 @@ fun RingingScreen(
             },
             text = {
                 Text(
-                    text = "If you are unable to walk or your device lacks a step detector, you may silence the alarm immediately.",
+                    text = if (isTestRing) {
+                        "Test Ring: You can silence this test immediately."
+                    } else {
+                        "Are you sure you want to bypass the remaining steps and silence the alarm?"
+                    },
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
@@ -184,16 +236,61 @@ fun RingingScreen(
                 Button(
                     onClick = {
                         showEmergencyDialog = false
-                        onDismiss()
+                        onEmergencyDismiss()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = NeonLime)
+                    colors = ButtonDefaults.buttonColors(containerColor = Danger)
                 ) {
-                    Text("Silence Now", color = TextInverse, fontWeight = FontWeight.Bold)
+                    Text("Silence Now", color = TextPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 Button(
                     onClick = { showEmergencyDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = CardElevated)
+                ) {
+                    Text("Cancel", color = TextPrimary)
+                }
+            }
+        )
+    }
+
+    // Technical Sensor Failure Recovery Dialog
+    if (showSensorFailureDialog) {
+        AlertDialog(
+            onDismissRequest = { showSensorFailureDialog = false },
+            containerColor = CardCharcoal,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Warning)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Hardware Sensor Unavailable",
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = "A hardware step sensor or Activity Recognition permission is missing on this device. You may use this technical recovery route to silence the alarm.",
+                    color = TextSecondary,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSensorFailureDialog = false
+                        onSensorFailureDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Warning)
+                ) {
+                    Text("Technical Recovery Silence", color = TextInverse, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showSensorFailureDialog = false },
                     colors = ButtonDefaults.buttonColors(containerColor = CardElevated)
                 ) {
                     Text("Cancel", color = TextPrimary)
@@ -254,7 +351,7 @@ fun RingingScreen(
                 )
 
                 Text(
-                    text = alarmLabel,
+                    text = if (isTestRing) "[TEST RING] $alarmLabel" else alarmLabel,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = NeonLime,
@@ -299,7 +396,7 @@ fun RingingScreen(
                         Spacer(modifier = Modifier.height(14.dp))
 
                         val noticeText = if (isGoalReached) {
-                            "🎉 Goal reached! You may now dismiss the alarm."
+                            "🎉 Step goal reached! Tap below to silence alarm and view your morning tasks."
                         } else {
                             "Walk with your phone to turn off the alarm. The dismiss button unlocks when your step goal is reached."
                         }
@@ -314,14 +411,34 @@ fun RingingScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Accessible Emergency Fallback Link
-                        Text(
-                            text = "Need emergency dismiss?",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextMuted,
-                            modifier = Modifier.clickable { showEmergencyDialog = true }
-                        )
+                        // Emergency Dismiss Link (only if enabled OR if test ring!)
+                        if (isTestRing || showEmergencyDismiss) {
+                            Text(
+                                text = if (isTestRing) "Silence Test Ring" else "Need emergency dismiss?",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isTestRing) NeonLime else TextMuted,
+                                modifier = Modifier.clickable { showEmergencyDialog = true }
+                            )
+                        } else {
+                            Text(
+                                text = "Strict Mode: Emergency Dismiss Disabled",
+                                fontSize = 11.sp,
+                                color = TextMuted
+                            )
+                        }
+
+                        // Technical failure recovery fallback (distinct from user switch)
+                        if (!isStepSensorAvailable) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "⚠️ Step sensor unavailable — Tap for technical recovery",
+                                fontSize = 11.sp,
+                                color = Warning,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { showSensorFailureDialog = true }
+                            )
+                        }
                     }
                 }
             } else {
@@ -334,7 +451,7 @@ fun RingingScreen(
 
             // Bottom Dismiss Button
             Button(
-                onClick = onDismiss,
+                onClick = onDismissGoalReached,
                 enabled = isGoalReached,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -346,7 +463,7 @@ fun RingingScreen(
                 )
             ) {
                 val buttonLabel = if (isGoalReached) {
-                    "Dismiss Alarm"
+                    if (walkToDismiss) "Dismiss & View Today's Tasks" else "Dismiss Alarm"
                 } else {
                     "Walk ${targetSteps - stepsTaken} more steps to dismiss"
                 }
@@ -363,4 +480,3 @@ fun RingingScreen(
         }
     }
 }
-

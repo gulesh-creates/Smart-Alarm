@@ -12,8 +12,10 @@ import com.zenith.study.data.local.UserPreferencesRepository
 import com.zenith.study.data.local.ZenithDatabase
 import com.zenith.study.data.repository.AlarmRepositoryImpl
 import com.zenith.study.data.repository.FocusSessionRepositoryImpl
+import com.zenith.study.data.repository.TodoRepositoryImpl
 import com.zenith.study.domain.repository.AlarmRepository
 import com.zenith.study.domain.repository.FocusSessionRepository
+import com.zenith.study.domain.repository.TodoRepository
 
 class ZenithApplication : Application() {
 
@@ -24,6 +26,9 @@ class ZenithApplication : Application() {
         private set
 
     lateinit var sessionRepository: FocusSessionRepository
+        private set
+
+    lateinit var todoRepository: TodoRepository
         private set
 
     lateinit var userPreferencesRepository: UserPreferencesRepository
@@ -38,6 +43,7 @@ class ZenithApplication : Application() {
         database = ZenithDatabase.getInstance(this)
         alarmRepository = AlarmRepositoryImpl(database.alarmDao())
         sessionRepository = FocusSessionRepositoryImpl(database.focusSessionDao())
+        todoRepository = TodoRepositoryImpl(database.todoDao())
         userPreferencesRepository = UserPreferencesRepository(this)
         alarmScheduler = AndroidAlarmScheduler(this)
 

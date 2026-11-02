@@ -11,10 +11,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,6 +27,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -38,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zenith.study.domain.model.UserSettings
+import com.zenith.study.ui.theme.BorderMedium
 import com.zenith.study.ui.theme.BorderSubtle
 import com.zenith.study.ui.theme.CanvasBlack
 import com.zenith.study.ui.theme.CardCharcoal
@@ -53,17 +62,98 @@ import com.zenith.study.ui.theme.TextSecondary
 @Composable
 fun SettingsScreen(
     userSettings: UserSettings,
+    onUpdateUserName: (String) -> Unit,
     onUpdateDailyGoal: (Int) -> Unit,
     onToggleSound: (Boolean) -> Unit,
     onToggle24Hour: (Boolean) -> Unit,
     onToggleVibration: (Boolean) -> Unit,
-    onToggleAutoFlip: (Boolean) -> Unit,
+    onToggleVolumeButtons: (Boolean) -> Unit,
     onResetAllData: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
     var showGoalMenu by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    var showNameDialog by remember { mutableStateOf(false) }
+    var nameInput by remember { mutableStateOf(userSettings.userName) }
+
+    if (showNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showNameDialog = false },
+            containerColor = CardCharcoal,
+            title = {
+                Text(
+                    text = "Your Display Name",
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter your preferred name for greetings on the home dashboard. Android does not provide a universal, permission-free owner-name API.",
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { if (it.length <= 30) nameInput = it },
+                        label = { Text("Display Name") },
+                        placeholder = { Text("e.g. Alex or Gulesh") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NeonLime,
+                            unfocusedBorderColor = BorderMedium,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "${nameInput.length}/30 characters",
+                        color = TextMuted,
+                        fontSize = 11.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onUpdateUserName(nameInput.trim())
+                        showNameDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NeonLime)
+                ) {
+                    Text("Save", color = TextInverse, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Row {
+                    if (userSettings.userName.isNotBlank()) {
+                        Button(
+                            onClick = {
+                                onUpdateUserName("")
+                                nameInput = ""
+                                showNameDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CardElevated)
+                        ) {
+                            Text("Clear", color = Danger)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Button(
+                        onClick = { showNameDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = CardElevated)
+                    ) {
+                        Text("Cancel", color = TextPrimary)
+                    }
+                }
+            }
+        )
+    }
 
     if (showResetDialog) {
         AlertDialog(
@@ -78,7 +168,7 @@ fun SettingsScreen(
             },
             text = {
                 Text(
-                    text = "This will delete all saved alarms, clear study session history, and restore factory preferences.",
+                    text = "This will delete all saved alarms, clear study session history, remove to-do tasks, and restore default preferences.",
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
@@ -119,13 +209,71 @@ fun SettingsScreen(
             color = TextPrimary
         )
         Text(
-            text = "Preferences & Android platform architecture",
+            text = "Preferences, profile & device controls",
             fontSize = 13.sp,
             color = TextSecondary,
             modifier = Modifier.padding(top = 2.dp)
         )
 
         Spacer(modifier = Modifier.height(20.dp))
+
+        // Profile / User Name Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = CardCharcoal)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        nameInput = userSettings.userName
+                        showNameDialog = true
+                    }
+                    .padding(18.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(CardSubtle),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = NeonLime,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = "Your Name",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = if (userSettings.userName.isNotBlank()) userSettings.userName else "Not set (Tap to configure)",
+                            fontSize = 12.sp,
+                            color = if (userSettings.userName.isNotBlank()) NeonLime else TextMuted,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = TextMuted
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Preferences Group
         Card(
@@ -178,14 +326,8 @@ fun SettingsScreen(
                             modifier = Modifier.background(CardCharcoal)
                         ) {
                             listOf(60, 120, 180, 240, 300).forEach { mins ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = "${mins / 60} Hours (${mins}m)",
-                                            color = TextPrimary,
-                                            fontSize = 13.sp
-                                        )
-                                    },
+                                DropMenuItemCustom(
+                                    text = "${mins / 60} Hours (${mins}m)",
                                     onClick = {
                                         onUpdateDailyGoal(mins)
                                         showGoalMenu = false
@@ -201,7 +343,7 @@ fun SettingsScreen(
                 // Sound On/Off
                 SettingsSwitchRow(
                     title = "Audio Synthesizer & Tones",
-                    subtitle = "Audible alarm ringtones and timer completion",
+                    subtitle = "Audible alarm ringtones and timer completion alerts",
                     checked = userSettings.isSoundEnabled,
                     onCheckedChange = onToggleSound
                 )
@@ -221,65 +363,24 @@ fun SettingsScreen(
                 // Vibration & Haptics
                 SettingsSwitchRow(
                     title = "Vibration & Haptics",
-                    subtitle = "Vibrate during alarm ringing and timer flips",
+                    subtitle = "Vibrate during alarm ringing and timer completion",
                     checked = userSettings.isVibrationEnabled,
                     onCheckedChange = onToggleVibration
                 )
 
                 Spacer(modifier = Modifier.height(1.dp).fillMaxWidth().background(BorderSubtle))
 
-                // Flip-to-start Sensor Toggle
+                // Volume Button Timer Controls
                 SettingsSwitchRow(
-                    title = "Face-Down Auto Detection",
-                    subtitle = "Start timer automatically when phone is placed face down",
-                    checked = userSettings.autoFlipEnabled,
-                    onCheckedChange = onToggleAutoFlip
+                    title = "Volume Button Timer Controls",
+                    subtitle = "While Timer screen is active: Volume Up = Start/Resume, Volume Down = Pause. System volume will not change. (Use notification actions for background control).",
+                    checked = userSettings.volumeButtonsEnabled,
+                    onCheckedChange = onToggleVolumeButtons
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
-
-        // Android Production Architecture Disclosure Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = CardCharcoal)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "Android Platform Architecture",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = NeonLime
-                )
-                Text(
-                    text = "Native Android features powering this production app:",
-                    fontSize = 12.sp,
-                    color = TextSecondary,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 14.dp)
-                )
-
-                ArchitectureRow(
-                    pill = "Exact Alarms",
-                    desc = "Uses AlarmManager.setAlarmClock() so alarms fire reliably through Doze and device standby."
-                )
-                ArchitectureRow(
-                    pill = "Lock Screen",
-                    desc = "Uses Notification.setFullScreenIntent() + showWhenLocked to launch over keyguard."
-                )
-                ArchitectureRow(
-                    pill = "Step Sensor",
-                    desc = "Hardware Sensor.TYPE_STEP_DETECTOR counts discrete steps with ACTIVITY_RECOGNITION."
-                )
-                ArchitectureRow(
-                    pill = "Background Services",
-                    desc = "ForegroundService with persistent notification keeps alarm audio and timer reliable."
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
 
         // Reset Data Button
         Button(
@@ -298,6 +399,20 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(80.dp))
     }
+}
+
+@Composable
+private fun DropMenuItemCustom(text: String, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                text = text,
+                color = TextPrimary,
+                fontSize = 13.sp
+            )
+        },
+        onClick = onClick
+    )
 }
 
 @Composable
@@ -329,6 +444,8 @@ private fun SettingsSwitchRow(
             )
         }
 
+        Spacer(modifier = Modifier.width(12.dp))
+
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -341,40 +458,3 @@ private fun SettingsSwitchRow(
         )
     }
 }
-
-@Composable
-private fun ArchitectureRow(
-    pill: String,
-    desc: String
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
-                .background(CardSubtle)
-                .padding(horizontal = 8.dp, vertical = 3.dp)
-        ) {
-            Text(
-                text = pill,
-                color = NeonLime,
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = desc,
-            color = TextSecondary,
-            fontSize = 11.sp,
-            lineHeight = 15.sp,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-

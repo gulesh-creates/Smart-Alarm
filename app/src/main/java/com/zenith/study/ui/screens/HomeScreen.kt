@@ -21,18 +21,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.HourglassBottom
+import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,7 +51,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zenith.study.domain.engine.StatisticsReport
 import com.zenith.study.domain.model.Alarm
+import com.zenith.study.domain.model.TimerMode
+import com.zenith.study.domain.model.TodoItem
 import com.zenith.study.ui.components.SemicircularGauge
+import com.zenith.study.ui.theme.BorderMedium
+import com.zenith.study.ui.theme.BorderSubtle
 import com.zenith.study.ui.theme.CanvasBlack
 import com.zenith.study.ui.theme.CardCharcoal
 import com.zenith.study.ui.theme.CardSubtle
@@ -58,10 +71,17 @@ import java.util.Locale
 
 @Composable
 fun HomeScreen(
+    userName: String,
     nextAlarm: Alarm?,
     statisticsReport: StatisticsReport,
     dailyGoalMinutes: Int,
+    selectedDurationMinutes: Int,
+    timerMode: TimerMode,
     is24Hour: Boolean,
+    todayTodos: List<TodoItem>,
+    onToggleTodo: (TodoItem) -> Unit,
+    onAddTodo: (String) -> Unit,
+    onDeleteTodo: (Long) -> Unit,
     onStartSessionClick: () -> Unit,
     onNextAlarmToggle: (Alarm, Boolean) -> Unit,
     onTestAlarmClick: (Alarm) -> Unit,
@@ -73,6 +93,9 @@ fun HomeScreen(
     val todayFormatted = remember {
         LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.getDefault()))
     }
+    var newTodoText by remember { mutableStateOf("") }
+
+    val greeting = if (userName.isNotBlank()) "Hi ${userName.trim()} 👋" else "Welcome 👋"
 
     Column(
         modifier = modifier
@@ -89,7 +112,7 @@ fun HomeScreen(
         ) {
             Column {
                 Text(
-                    text = "Hi Alex 👋",
+                    text = greeting,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = TextPrimary
@@ -154,8 +177,9 @@ fun HomeScreen(
                     color = TextInverse
                 )
 
+                val modeDescription = if (timerMode == TimerMode.SMART) "Smart Timer (Screen-State)" else "Normal Timer"
                 Text(
-                    text = "25 min • Focus block with Flip-to-Start",
+                    text = "$selectedDurationMinutes min • $modeDescription",
                     fontSize = 13.sp,
                     color = TextInverse.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
@@ -279,7 +303,140 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(22.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Today's Routine & Post-Alarm Tasks Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = CardCharcoal)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ListAlt,
+                            contentDescription = null,
+                            tint = NeonLime,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Today's Tasks",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    }
+                    val completedCount = todayTodos.count { it.isCompleted }
+                    Text(
+                        text = "$completedCount/${todayTodos.size} done",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (completedCount == todayTodos.size && todayTodos.isNotEmpty()) NeonLime else TextMuted
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Add Task Input
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = newTodoText,
+                        onValueChange = { newTodoText = it },
+                        placeholder = { Text("Add a study or morning task...", color = TextMuted, fontSize = 13.sp) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NeonLime,
+                            unfocusedBorderColor = BorderSubtle,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            if (newTodoText.isNotBlank()) {
+                                onAddTodo(newTodoText.trim())
+                                newTodoText = ""
+                            }
+                        },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(NeonLime)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Task", tint = TextInverse)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (todayTodos.isEmpty()) {
+                    Text(
+                        text = "No tasks yet. Tasks created after alarm dismissals appear here.",
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        todayTodos.forEach { todo ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(CardSubtle)
+                                    .clickable { onToggleTodo(todo) }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (todo.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.Circle,
+                                        contentDescription = null,
+                                        tint = if (todo.isCompleted) NeonLime else TextMuted,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = todo.taskText,
+                                        fontSize = 13.sp,
+                                        color = if (todo.isCompleted) TextMuted else TextPrimary,
+                                        fontWeight = if (todo.isCompleted) FontWeight.Normal else FontWeight.Medium
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { onDeleteTodo(todo.id) },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = TextMuted,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Next Alarm Section
         Row(
@@ -477,4 +634,3 @@ private fun MetricColumn(
         )
     }
 }
-

@@ -13,10 +13,13 @@ import java.util.Locale
  * @param daysOfWeek Set of repeat days. When empty, represents a one-time alarm.
  * @param isEnabled Whether the alarm is active and scheduled with AlarmManager.
  * @param label User-facing title for the alarm.
- * @param tone Tone name or content URI for the alarm.
+ * @param tone Tone name or title for the alarm.
+ * @param toneUri Content URI string or file path for the alarm tone. Null indicates system default.
+ * @param volume Per-alarm playback volume [0.0..1.0].
  * @param walkToDismiss When true, requires physical steps to silence the ringing alarm.
  * @param stepTarget Number of steps required before dismiss is unlocked [5..500].
  * @param isVibrationEnabled Whether vibration pattern runs during alarm ring.
+ * @param showEmergencyDismiss Whether user can bypass walk challenge via Emergency Dismiss.
  * @param lastTriggeredTimeMillis Epoch timestamp of when this alarm last started ringing.
  */
 data class Alarm(
@@ -27,14 +30,18 @@ data class Alarm(
     val isEnabled: Boolean = true,
     val label: String = "",
     val tone: String = "Default",
+    val toneUri: String? = null,
+    val volume: Float = 1.0f,
     val walkToDismiss: Boolean = true,
     val stepTarget: Int = 30,
     val isVibrationEnabled: Boolean = true,
+    val showEmergencyDismiss: Boolean = true,
     val lastTriggeredTimeMillis: Long = 0L
 ) {
     init {
         require(hour in 0..23) { "Hour must be within 0..23, was: $hour" }
         require(minute in 0..59) { "Minute must be within 0..59, was: $minute" }
+        require(volume in 0.0f..1.0f) { "Volume must be between 0.0 and 1.0, was: $volume" }
         if (walkToDismiss) {
             require(stepTarget in 5..500) { "Step target must be between 5 and 500, was: $stepTarget" }
         }
@@ -70,4 +77,3 @@ data class Alarm(
         return ordered.joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
     }
 }
-

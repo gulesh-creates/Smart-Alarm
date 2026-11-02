@@ -15,9 +15,12 @@ data class AlarmEntity(
     val isEnabled: Boolean,
     val label: String,
     val tone: String,
+    val toneUri: String? = null,
+    val volume: Float = 1.0f,
     val walkToDismiss: Boolean,
     val stepTarget: Int,
     val isVibrationEnabled: Boolean,
+    val showEmergencyDismiss: Boolean = true,
     val lastTriggeredTimeMillis: Long
 ) {
     fun toDomain(): Alarm = Alarm(
@@ -28,9 +31,12 @@ data class AlarmEntity(
         isEnabled = isEnabled,
         label = label,
         tone = tone,
+        toneUri = toneUri,
+        volume = volume,
         walkToDismiss = walkToDismiss,
         stepTarget = stepTarget,
         isVibrationEnabled = isVibrationEnabled,
+        showEmergencyDismiss = showEmergencyDismiss,
         lastTriggeredTimeMillis = lastTriggeredTimeMillis
     )
 
@@ -43,11 +49,13 @@ data class AlarmEntity(
             isEnabled = alarm.isEnabled,
             label = alarm.label,
             tone = alarm.tone,
+            toneUri = alarm.toneUri,
+            volume = alarm.volume,
             walkToDismiss = alarm.walkToDismiss,
             stepTarget = alarm.stepTarget,
             isVibrationEnabled = alarm.isVibrationEnabled,
+            showEmergencyDismiss = alarm.showEmergencyDismiss,
             lastTriggeredTimeMillis = alarm.lastTriggeredTimeMillis
         )
     }
 }
-
